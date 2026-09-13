@@ -6,7 +6,6 @@ import { create } from 'zustand';
 import { Workout, WorkoutExercise, WorkoutSet } from '../types/workout';
 
 const REST_SECONDS_DEFAULT = 30;
-const REST_EXTEND_SECONDS = 10;
 
 interface RestState {
   isActive: boolean;
@@ -32,19 +31,20 @@ interface WorkoutStore {
 
   // סטים
   addSet: (reps: number, weight: number) => { ok: true } | { ok: false; error: string };
+  deleteSet: (setId: string) => void;
 
   // מנוחה
-  extendRest: () => void;
+  extendRest: (seconds: number) => void;
   finishRestEarly: () => void;
   completeRestNaturally: () => void; // נקרא כשהספירה מגיעה ל-0
 }
 
 const genId = () => Math.random().toString(36).slice(2, 10);
 
-function startRestInternal(): RestState {
+function startRestInternal(targetSeconds: number = REST_SECONDS_DEFAULT): RestState {
   return {
     isActive: true,
-    targetSeconds: REST_SECONDS_DEFAULT,
+    targetSeconds,
     startedAt: Date.now(),
     lastCompletedSeconds: null,
   };
@@ -119,11 +119,13 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
 
     const isLast = currentExerciseIndex === activeWorkout.exercises.length - 1;
     if (isLast) {
+      // תרגיל "מסתיים" בפועל רק כאן - בפעם הראשונה שעוברים הלאה ממנו לתרגיל חדש
+      // (לכן זו הפעם היחידה שמפעילים מנוחה אוטומטית בין תרגילים)
       const newExercise: WorkoutExercise = { id: genId(), name: '', sets: [] };
       set({
         activeWorkout: { ...activeWorkout, exercises: [...activeWorkout.exercises, newExercise] },
         currentExerciseIndex: currentExerciseIndex + 1,
-        rest: idleRest,
+        rest: startRestInternal(),
       });
     } else {
       set({ currentExerciseIndex: currentExerciseIndex + 1, rest: idleRest });
@@ -167,10 +169,19 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     return { ok: true };
   },
 
-  extendRest: () => {
+  deleteSet: (setId) => {
+    const { activeWorkout, currentExerciseIndex } = get();
+    if (!activeWorkout) return;
+    const exercises = activeWorkout.exercises.map((ex, i) =>
+      i === currentExerciseIndex ? { ...ex, sets: ex.sets.filter((s) => s.id !== setId) } : ex
+    );
+    set({ activeWorkout: { ...activeWorkout, exercises } });
+  },
+
+  extendRest: (seconds) => {
     const { rest } = get();
     if (!rest.isActive) return;
-    set({ rest: { ...rest, targetSeconds: rest.targetSeconds + REST_EXTEND_SECONDS } });
+    set({ rest: { ...rest, targetSeconds: rest.targetSeconds + seconds } });
   },
 
   finishRestEarly: () => {
