@@ -84,6 +84,12 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       (ex) => ex.name.trim().length > 0 && ex.sets.length > 0
     );
 
+    // אם אחרי הסינון לא נשאר כלום - אין מה לשמור. לא מאפסים את האימון הפעיל,
+    // כדי שהמשתמשת תוכל להמשיך ולהוסיף סטים ולנסות לסיים שוב.
+    if (cleanExercises.length === 0) {
+      return null;
+    }
+
     const totalVolume = cleanExercises.reduce((sum, ex) => {
       return sum + ex.sets.reduce((exSum, s) => exSum + s.weight * s.reps, 0);
     }, 0);
@@ -125,7 +131,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       set({
         activeWorkout: { ...activeWorkout, exercises: [...activeWorkout.exercises, newExercise] },
         currentExerciseIndex: currentExerciseIndex + 1,
-        rest: startRestInternal(),
+        rest: idleRest, // אין יותר מנוחה אוטומטית במעבר בין תרגילים
       });
     } else {
       set({ currentExerciseIndex: currentExerciseIndex + 1, rest: idleRest });
@@ -170,12 +176,20 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   },
 
   deleteSet: (setId) => {
-    const { activeWorkout, currentExerciseIndex } = get();
+    const { activeWorkout, currentExerciseIndex, rest } = get();
     if (!activeWorkout) return;
+    const exercise = activeWorkout.exercises[currentExerciseIndex];
+    // אם מוחקים את הסט האחרון שנוסף - מבטלים גם את המנוחה שהתחילה בעקבותיו
+    // (בין אם היא עדיין רצה ובין אם היא כבר הסתיימה ומחכה להיות משויכת לסט הבא).
+    // מחיקת סט ישן יותר לא נוגעת במנוחה הנוכחית - היא לא שייכת אליו.
+    const isLastSet = exercise?.sets[exercise.sets.length - 1]?.id === setId;
     const exercises = activeWorkout.exercises.map((ex, i) =>
       i === currentExerciseIndex ? { ...ex, sets: ex.sets.filter((s) => s.id !== setId) } : ex
     );
-    set({ activeWorkout: { ...activeWorkout, exercises } });
+    set({
+      activeWorkout: { ...activeWorkout, exercises },
+      rest: isLastSet ? idleRest : rest,
+    });
   },
 
   extendRest: (seconds) => {

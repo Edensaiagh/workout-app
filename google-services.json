@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "779775783240",
+    "project_id": "bizi365-76610",
+    "storage_bucket": "bizi365-76610.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:779775783240:android:966df292af84a53da4837d",
+        "android_client_info": {
+          "package_name": "com.bizi365.workoutapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "779775783240-9nrcqvlbbk0bfr5236bbcds47g59k30u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bizi365.workoutapp",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "779775783240-pqf2g65b5i83lqt9g37s11ugbodju7ph.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bizi365.workoutapp",
+            "certificate_hash": "54af9eeaa171f55df8c9642808d6f9606a413974"
+          }
+        },
+        {
+          "client_id": "779775783240-psi06su173407b75p322eq1rib38s4h2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTwI5Og1bsoHtIE0QXnvlh9sEkh_OGE68"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "779775783240-psi06su173407b75p322eq1rib38s4h2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "779775783240-ntdchmq4rmi57gp08a5tpnqs2b3hs4m4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.bizi365.workoutapp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

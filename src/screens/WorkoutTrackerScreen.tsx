@@ -33,6 +33,7 @@ export default function WorkoutTrackerScreen() {
     rest,
     startWorkout,
     finishWorkout,
+    cancelWorkout,
     setExerciseName,
     goToNextExercise,
     goToPrevExercise,
@@ -175,7 +176,10 @@ export default function WorkoutTrackerScreen() {
 
   const doFinish = async () => {
     const completed = finishWorkout();
-    if (!completed) return;
+    if (!completed) {
+      Alert.alert('אין מה לשמור', 'צריך להוסיף לפחות סט אחד לפני שמסיימים את האימון');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -198,6 +202,17 @@ export default function WorkoutTrackerScreen() {
       { text: 'ביטול', style: 'cancel' },
       { text: 'סיים אימון', style: 'destructive', onPress: doFinish },
     ]);
+  };
+
+  const handleCancelWorkout = () => {
+    Alert.alert(
+      'למחוק את האימון?',
+      'כל הנתונים של האימון הנוכחי יימחקו לצמיתות ולא ניתן יהיה לשחזר אותם.',
+      [
+        { text: 'ביטול', style: 'cancel' },
+        { text: 'מחק אימון', style: 'destructive', onPress: cancelWorkout },
+      ]
+    );
   };
 
   if (!activeWorkout || !currentExercise) {
@@ -232,13 +247,91 @@ export default function WorkoutTrackerScreen() {
       ? Math.max(0, Math.min(1, restRemaining / rest.targetSeconds))
       : 0;
 
+  if (rest.isActive) {
+    return (
+      <View style={styles.restOverlay}>
+        <View style={styles.restOverlayHeader}>
+          <TouchableOpacity style={styles.restSkipButton} onPress={finishRestEarly}>
+            <Text style={styles.restSkipButtonText}>דלג על המנוחה</Text>
+          </TouchableOpacity>
+          <Text style={styles.restOverlayPosition}>
+            תרגיל {currentExerciseIndex + 1} מתוך {totalExercises}
+          </Text>
+        </View>
+
+        <Text style={styles.restOverlayLabel}>מנוחה</Text>
+        <Text style={styles.restOverlaySubtitle}>
+          לפני הסט הבא — {currentExercise.name || 'התרגיל'}
+        </Text>
+
+        <View style={styles.restRingWrap}>
+          <Svg
+            width={REST_RING_SIZE}
+            height={REST_RING_SIZE}
+            viewBox={`0 0 ${REST_RING_SIZE} ${REST_RING_SIZE}`}
+            style={styles.restRingSvg}
+          >
+            <Circle
+              cx={REST_RING_SIZE / 2}
+              cy={REST_RING_SIZE / 2}
+              r={REST_RING_RADIUS}
+              stroke={COLOR_SURFACE_3}
+              strokeWidth={REST_RING_STROKE}
+              fill="none"
+            />
+            <Circle
+              cx={REST_RING_SIZE / 2}
+              cy={REST_RING_SIZE / 2}
+              r={REST_RING_RADIUS}
+              stroke={restRemaining <= 5 ? COLOR_DANGER : COLOR_ACCENT}
+              strokeWidth={REST_RING_STROKE}
+              strokeLinecap="round"
+              fill="none"
+              strokeDasharray={`${REST_RING_CIRCUMFERENCE} ${REST_RING_CIRCUMFERENCE}`}
+              strokeDashoffset={REST_RING_CIRCUMFERENCE * (1 - restProgress)}
+            />
+          </Svg>
+          <View style={styles.restRingCenter}>
+            <Text style={[styles.restCountdown, restRemaining <= 5 && styles.restCountdownUrgent]}>
+              {fmt(restRemaining)}
+            </Text>
+            <Text style={styles.restCountdownHint}>שניות נותרו</Text>
+          </View>
+        </View>
+
+        <View style={styles.restAddRow}>
+          <TouchableOpacity style={styles.secondaryButtonSmall} onPress={() => extendRest(10)}>
+            <Text style={styles.secondaryButtonText}>10+ שניות</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButtonSmall} onPress={() => extendRest(30)}>
+            <Text style={styles.secondaryButtonText}>30+ שניות</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity style={styles.primaryButton} onPress={finishRestEarly}>
+          <Text style={styles.primaryButtonText}>סיים מנוחה</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.restOverlayFooter}>בסיום המנוחה תעברי אוטומטית לטופס הסט הבא</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingTop: 56 }}>
       {/* כותרת עליונה */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.finishButton} onPress={handleFinish} disabled={saving}>
-          <Text style={styles.finishButtonText}>{saving ? 'שומר...' : 'סיום אימון'}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={handleCancelWorkout}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.cancelButtonText}>✕</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.finishButton} onPress={handleFinish} disabled={saving}>
+            <Text style={styles.finishButtonText}>{saving ? 'שומר...' : 'סיום אימון'}</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.clockGroup}>
           <View style={styles.clockDot} />
           <Text style={styles.timerLabel}>זמן אימון כולל</Text>
@@ -262,6 +355,13 @@ export default function WorkoutTrackerScreen() {
         {/* רשימת הסטים בסגנון צ'יפים, עם שורות מנוחה ביניהם */}
         {currentExercise.sets.map((set, i) => (
           <React.Fragment key={set.id}>
+            {set.restBeforeSeconds !== null && (
+              <View style={styles.restDivider}>
+                <View style={styles.restDividerLine} />
+                <Text style={styles.restDividerLabel}>מנוחה {fmt(set.restBeforeSeconds)}</Text>
+                <View style={styles.restDividerLine} />
+              </View>
+            )}
             <View style={styles.setRow}>
               <View style={styles.setIndex}>
                 <Text style={styles.setIndexText}>{i + 1}</Text>
@@ -284,13 +384,6 @@ export default function WorkoutTrackerScreen() {
                 <Text style={styles.deleteSetText}>✕</Text>
               </TouchableOpacity>
             </View>
-            {set.restBeforeSeconds !== null && (
-              <View style={styles.restDivider}>
-                <View style={styles.restDividerLine} />
-                <Text style={styles.restDividerLabel}>מנוחה {fmt(set.restBeforeSeconds)}</Text>
-                <View style={styles.restDividerLine} />
-              </View>
-            )}
           </React.Fragment>
         ))}
 
@@ -343,57 +436,6 @@ export default function WorkoutTrackerScreen() {
             <Text style={styles.primaryButtonText}>+ הוספת סט</Text>
           </TouchableOpacity>
         </View>
-
-        {/* פאנל מנוחה פעילה */}
-        {rest.isActive && (
-          <View style={styles.restPanel}>
-            <Text style={styles.restLabel}>מנוחה</Text>
-            <View style={styles.restRingWrap}>
-              <Svg
-                width={REST_RING_SIZE}
-                height={REST_RING_SIZE}
-                viewBox={`0 0 ${REST_RING_SIZE} ${REST_RING_SIZE}`}
-                style={styles.restRingSvg}
-              >
-                <Circle
-                  cx={REST_RING_SIZE / 2}
-                  cy={REST_RING_SIZE / 2}
-                  r={REST_RING_RADIUS}
-                  stroke={COLOR_SURFACE_3}
-                  strokeWidth={REST_RING_STROKE}
-                  fill="none"
-                />
-                <Circle
-                  cx={REST_RING_SIZE / 2}
-                  cy={REST_RING_SIZE / 2}
-                  r={REST_RING_RADIUS}
-                  stroke={restRemaining <= 5 ? COLOR_DANGER : COLOR_ACCENT}
-                  strokeWidth={REST_RING_STROKE}
-                  strokeLinecap="round"
-                  fill="none"
-                  strokeDasharray={`${REST_RING_CIRCUMFERENCE} ${REST_RING_CIRCUMFERENCE}`}
-                  strokeDashoffset={REST_RING_CIRCUMFERENCE * (1 - restProgress)}
-                />
-              </Svg>
-              <View style={styles.restRingCenter}>
-                <Text style={[styles.restCountdown, restRemaining <= 5 && styles.restCountdownUrgent]}>
-                  {fmt(restRemaining)}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.restAddRow}>
-              <TouchableOpacity style={styles.secondaryButtonSmall} onPress={() => extendRest(10)}>
-                <Text style={styles.secondaryButtonText}>+10 שניות</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryButtonSmall} onPress={() => extendRest(30)}>
-                <Text style={styles.secondaryButtonText}>+30 שניות</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity style={styles.primaryButton} onPress={finishRestEarly}>
-              <Text style={styles.primaryButtonText}>סיים מנוחה</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
 
       {/* מונה תרגיל + נקודות התקדמות - בתחתית, מעל כפתורי הניווט */}
@@ -456,9 +498,9 @@ const COLOR_ACCENT = '#f4c430';
 const COLOR_LINE = '#33373e';
 const COLOR_DANGER = '#e5636a';
 
-const REST_RING_SIZE = 150;
-const REST_RING_RADIUS = 65;
-const REST_RING_STROKE = 10;
+const REST_RING_SIZE = 220;
+const REST_RING_RADIUS = 96;
+const REST_RING_STROKE = 14;
 const REST_RING_CIRCUMFERENCE = 2 * Math.PI * REST_RING_RADIUS;
 
 const styles = StyleSheet.create({
@@ -485,6 +527,17 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   clockGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cancelButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLOR_LINE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButtonText: { color: COLOR_MUTED, fontSize: 15, fontWeight: '700' },
   clockDot: {
     width: 7,
     height: 7,
@@ -605,14 +658,46 @@ const styles = StyleSheet.create({
   fieldHint: { color: COLOR_MUTED, fontSize: 10, textAlign: 'center', marginBottom: 10 },
   errorText: { color: COLOR_DANGER, fontSize: 12, textAlign: 'center', marginBottom: 8 },
 
-  restPanel: { marginTop: 14, alignItems: 'center' },
-  restLabel: { color: COLOR_MUTED, fontSize: 13, fontWeight: '600', marginBottom: 10 },
+  restOverlay: {
+    flex: 1,
+    backgroundColor: COLOR_BG,
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 32,
+    justifyContent: 'space-between',
+  },
+  restOverlayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  restSkipButton: {
+    borderWidth: 1,
+    borderColor: COLOR_LINE,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  restSkipButtonText: { color: COLOR_MUTED, fontSize: 12, fontWeight: '600' },
+  restOverlayPosition: { color: COLOR_MUTED, fontSize: 11, fontWeight: '600' },
+  restOverlayLabel: { textAlign: 'center', color: COLOR_MUTED, fontSize: 13, fontWeight: '600', marginTop: 4 },
+  restOverlaySubtitle: {
+    textAlign: 'center',
+    color: COLOR_TEXT,
+    fontSize: 15,
+    fontWeight: '700',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  restCountdownHint: { fontSize: 12, color: COLOR_MUTED, fontWeight: '600', marginTop: 4 },
+  restOverlayFooter: { textAlign: 'center', color: '#5a5f68', fontSize: 11, marginTop: 14 },
   restRingWrap: {
     width: REST_RING_SIZE,
     height: REST_RING_SIZE,
     marginBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
   },
   restRingSvg: { transform: [{ rotate: '-90deg' }] },
   restRingCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },

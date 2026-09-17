@@ -24,11 +24,9 @@ let googleConfigured = false;
 // לוחצים על "המשך עם Google", עם require() בתוך הפונקציה - כך שרק הכניסה
 // עם Google תיכשל בצורה מבוקרת בזמן שהאפליקציה עצמה תמשיך לעבוד כרגיל.
 //
-// TODO: להחליף ב-Web client ID האמיתי מ-Firebase Console
-// (Authentication -> Sign-in method -> Google -> Web SDK configuration -> Web client ID).
 // כניסה עם Google תעבוד בפועל רק אחרי מעבר ל-development build
-// (npx expo prebuild + eas build) והגדרת OAuth client + SHA-1 באנדרואיד ב-Google Cloud/Firebase.
-const GOOGLE_WEB_CLIENT_ID = 'REPLACE_WITH_FIREBASE_WEB_CLIENT_ID';
+// (npx expo prebuild + eas build) והגדרת SHA-1 באנדרואיד ב-Firebase Console.
+const GOOGLE_WEB_CLIENT_ID = '779775783240-psi06su173407b75p322eq1rib38s4h2.apps.googleusercontent.com';
 
 export async function signInWithGoogle() {
   let GoogleSignin: typeof import('@react-native-google-signin/google-signin').GoogleSignin;
