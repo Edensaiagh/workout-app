@@ -14,6 +14,8 @@ import { saveWorkout, getUserWorkouts } from '../lib/workoutService';
 import { useRestSounds } from '../lib/sound';
 import { useAuth } from '../lib/authContext';
 import ExerciseNamePicker from '../components/ExerciseNamePicker';
+import { WorkoutCompleteView } from '../components/WorkoutCompleteView';
+import { Workout } from '../types/workout';
 import Svg, { Circle } from 'react-native-svg';
 
 function fmt(totalSeconds: number): string {
@@ -54,6 +56,12 @@ export default function WorkoutTrackerScreen() {
   const [saving, setSaving] = useState(false);
   const [nameEditorVisible, setNameEditorVisible] = useState(false);
   const [personalHistory, setPersonalHistory] = useState<string[]>([]);
+
+  // מסך "אימון הושלם" - state מקומי מספיק (לא Zustand): ה-Tab.Navigator
+  // משאיר מסכים מורכבים בזיכרון גם כשעוברים טאב, אז זה שורד מעבר בין טאבים
+  // כל עוד לא סוגרים את האפליקציה לגמרי.
+  const [completedWorkout, setCompletedWorkout] = useState<Workout | null>(null);
+  const [completedSavedTo, setCompletedSavedTo] = useState<'cloud' | 'local'>('cloud');
 
   const lastBeepedSecond = useRef<number | null>(null);
 
@@ -184,17 +192,23 @@ export default function WorkoutTrackerScreen() {
     setSaving(true);
     try {
       const result = await saveWorkout(completed);
-      if (result.savedTo === 'cloud') {
-        Alert.alert('כל הכבוד!', 'האימון נשמר בהצלחה 💪');
-      } else {
+      // "נשמר בענן" מוצג עכשיו כבאנר בתוך מסך "אימון הושלם" עצמו, לא כ-Alert.
+      // "נשמר מקומית" נשאר כ-Alert (מידע חשוב שכדאי לוודא שהמשתמשת ראתה).
+      if (result.savedTo === 'local') {
         Alert.alert(
           'נשמר מקומית',
           'לא הצלחנו להתחבר לענן כרגע, אז שמרנו את האימון על המכשיר. הוא יסונכרן אוטומטית בפעם הבאה שיש רשת.'
         );
       }
+      setCompletedWorkout(completed);
+      setCompletedSavedTo(result.savedTo);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleStartNew = () => {
+    setCompletedWorkout(null);
   };
 
   const handleFinish = () => {
@@ -214,6 +228,18 @@ export default function WorkoutTrackerScreen() {
       ]
     );
   };
+
+  if (completedWorkout) {
+    return (
+      <WorkoutCompleteView
+        workout={completedWorkout}
+        savedTo={completedSavedTo}
+        userId={userId}
+        onStartNew={handleStartNew}
+        appName="שם האפליקציה" // TODO: להחליף לשם האמיתי
+      />
+    );
+  }
 
   if (!activeWorkout || !currentExercise) {
     return (

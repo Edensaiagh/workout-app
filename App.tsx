@@ -6,6 +6,7 @@ import { View, ActivityIndicator } from 'react-native';
 
 import WorkoutTrackerScreen from './src/screens/WorkoutTrackerScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
+import AnalysisScreen from './src/screens/AnalysisScreen';
 import AccountScreen from './src/screens/AccountScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import { AuthProvider, useAuth } from './src/lib/authContext';
@@ -39,7 +40,13 @@ function AppTabs() {
         },
         tabBarIcon: ({ color, size }) => {
           const iconName =
-            route.name === 'אימון' ? 'barbell' : route.name === 'היסטוריה' ? 'time' : 'person-circle';
+            route.name === 'אימון'
+              ? 'barbell'
+              : route.name === 'היסטוריה'
+              ? 'time'
+              : route.name === 'ניתוח'
+              ? 'stats-chart'
+              : 'person-circle';
           return <Ionicons name={iconName as any} size={size} color={color} />;
         },
       })}
@@ -48,6 +55,7 @@ function AppTabs() {
           תגידי לי - אפשר למרר את הסדר בלי להפעיל I18nManager.forceRTL גלובלי */}
       <Tab.Screen name="אימון" component={WorkoutTrackerScreen} />
       <Tab.Screen name="היסטוריה" component={HistoryScreen} />
+      <Tab.Screen name="ניתוח" component={AnalysisScreen} />
       <Tab.Screen name="חשבון" component={AccountScreen} />
     </Tab.Navigator>
   );

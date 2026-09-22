@@ -32,7 +32,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.779775783240-ntdchmq4rmi57gp08a5tpnqs2b3hs4m4"
         }
-      ]
+      ],
+      "expo-sharing"
     ]
   }
 }
