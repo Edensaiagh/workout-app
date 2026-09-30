@@ -15,6 +15,8 @@ import { Workout } from '../types/workout';
 import { getUserWorkouts, deleteWorkout } from '../lib/workoutService';
 import { getPersonalRecords, deletePersonalRecord, PersonalRecordsMap } from '../lib/personalRecords';
 import { useAuth } from '../lib/authContext';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, common, fontSize, iconSize, radius, spacing, touch } from '../theme';
 
 const PR_COLLAPSED_COUNT = 4;
 
@@ -77,19 +79,6 @@ function groupByMonth(workouts: Workout[]) {
   });
   return groups;
 }
-
-// צבעים - תואם למוקאפ שאושר
-const COLORS = {
-  bg: '#17181c',
-  panel: '#1f2126',
-  panelRaised: '#26282f',
-  hairline: '#33353c',
-  text: '#f1f0ec',
-  textDim: '#9a9ca4',
-  textFaint: '#64666f',
-  amber: '#ffb454',
-  teal: '#5fd0c0',
-};
 
 export default function HistoryScreen() {
   // מסך זה נטען רק כשיש משתמש מחובר (ראה App.tsx), ולכן user בטוח לא null
@@ -295,7 +284,7 @@ export default function HistoryScreen() {
 
         {loading && (
           <View style={styles.centerFill}>
-            <ActivityIndicator color={COLORS.amber} />
+            <ActivityIndicator color={colors.accent} />
           </View>
         )}
 
@@ -352,11 +341,11 @@ export default function HistoryScreen() {
                       </View>
                       <View style={styles.cardBottom}>
                         <View style={styles.metric}>
-                          <View style={[styles.dot, { backgroundColor: COLORS.amber }]} />
+                          <View style={[styles.dot, { backgroundColor: colors.accent }]} />
                           <Text style={styles.metricText}>{volume.toLocaleString()} ק"ג נפח</Text>
                         </View>
                         <View style={styles.metric}>
-                          <View style={[styles.dot, { backgroundColor: COLORS.teal }]} />
+                          <View style={[styles.dot, { backgroundColor: colors.teal }]} />
                           <Text style={styles.metricText}>{setCount} סטים</Text>
                         </View>
                       </View>
@@ -373,12 +362,13 @@ export default function HistoryScreen() {
         <Animated.View style={[styles.detailScreen, { transform: [{ translateX: detailTranslate }] }]}>
           <View style={styles.detailHeader}>
             <View style={styles.detailHeaderTop}>
-              <TouchableOpacity style={styles.backBtn} onPress={closeDetail}>
-                <Text style={styles.backArrow}>›</Text>
-                <Text style={styles.backText}>חזרה</Text>
+              <TouchableOpacity style={common.backButton} onPress={closeDetail}>
+                <Ionicons name="chevron-forward" size={iconSize.lg} color={colors.text} />
+                <Text style={common.backButtonText}>חזרה</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.deleteBtn} onPress={() => confirmDeleteWorkout(selectedWorkout)}>
-                <Text style={styles.deleteText}>מחיקת אימון</Text>
+              <TouchableOpacity style={[common.dangerButton, styles.deleteBtn]} onPress={() => confirmDeleteWorkout(selectedWorkout)}>
+                <Ionicons name="trash-outline" size={iconSize.sm} color={colors.danger} />
+                <Text style={common.dangerButtonText}>מחיקת אימון</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.detailTitle}>{formatHebrewDate(selectedWorkout.startedAt).dateLabel}</Text>
@@ -392,7 +382,7 @@ export default function HistoryScreen() {
 
           <View style={styles.detailStats}>
             <View style={styles.dstat}>
-              <Text style={[styles.dstatNum, { color: COLORS.amber }]}>
+              <Text style={[styles.dstatNum, { color: colors.accent }]}>
                 {calcVolume(selectedWorkout).toLocaleString()}
               </Text>
               <Text style={styles.dstatLabel}>ק"ג נפח כולל</Text>
@@ -436,9 +426,9 @@ export default function HistoryScreen() {
       {manageVisible && (
         <Animated.View style={[styles.detailScreen, { transform: [{ translateX: manageTranslate }] }]}>
           <View style={styles.manageHeader}>
-            <TouchableOpacity style={styles.backBtn} onPress={closeManage}>
-              <Text style={styles.backArrow}>›</Text>
-              <Text style={styles.backText}>חזרה</Text>
+            <TouchableOpacity style={common.backButton} onPress={closeManage}>
+              <Ionicons name="chevron-forward" size={iconSize.lg} color={colors.text} />
+              <Text style={common.backButtonText}>חזרה</Text>
             </TouchableOpacity>
             <View>
               <Text style={styles.manageTitle}>ניהול שיאים</Text>
@@ -488,8 +478,8 @@ export default function HistoryScreen() {
                         <Text style={styles.bold}>{r.maxSessionVolume.toLocaleString('he-IL')}</Text> נפח/אימון
                       </Text>
                     </View>
-                    <TouchableOpacity style={styles.trashBtn} onPress={() => setConfirmDeleteName(name)}>
-                      <Text style={styles.trashText}>✕</Text>
+                    <TouchableOpacity style={[common.iconButton, common.iconButtonDanger]} onPress={() => setConfirmDeleteName(name)}>
+                      <Text style={[common.iconButtonText, common.iconButtonTextDanger]}>✕</Text>
                     </TouchableOpacity>
                   </View>
                 );
@@ -503,87 +493,86 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  screen: { flex: 1, backgroundColor: COLORS.bg },
+  safe: { flex: 1, backgroundColor: colors.bg },
+  screen: { flex: 1, backgroundColor: colors.bg },
   centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
-  errorText: { color: COLORS.textDim, fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  emptyText: { color: COLORS.textFaint, fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  errorText: { color: colors.textDim, fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  emptyText: { color: colors.textFaint, fontSize: 14, textAlign: 'center', lineHeight: 20 },
   topbar: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, alignItems: 'center' },
-  h1: { fontSize: 28, fontWeight: '800', color: COLORS.text, textAlign: 'center' },
-  subtitle: { fontSize: 13, color: COLORS.textDim, marginTop: 2, textAlign: 'center' },
+  h1: { fontSize: 28, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  subtitle: { fontSize: 13, color: colors.textDim, marginTop: 2, textAlign: 'center' },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   prCard: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: COLORS.panel,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: COLORS.hairline,
+    borderColor: colors.line,
     borderRadius: 18,
     padding: 16,
   },
-  prTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text, textAlign: 'right' },
-  prSubtitle: { fontSize: 11.5, color: COLORS.textFaint, marginTop: 2, marginBottom: 12, textAlign: 'right' },
-  prEmptyText: { fontSize: 12.5, color: COLORS.textFaint, textAlign: 'center', lineHeight: 18, paddingVertical: 4 },
+  prTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  prSubtitle: { fontSize: 11.5, color: colors.textFaint, marginTop: 2, marginBottom: 12 },
+  prEmptyText: { fontSize: 12.5, color: colors.textFaint, textAlign: 'center', lineHeight: 18, paddingVertical: 4 },
   prRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: COLORS.hairline,
+    borderTopColor: colors.line,
   },
   prRowFirst: { borderTopWidth: 0, paddingTop: 0 },
-  prExerciseName: { fontSize: 13.5, fontWeight: '600', color: COLORS.text },
+  prExerciseName: { fontSize: 13.5, fontWeight: '600', color: colors.text },
   prValsRow: { flexDirection: 'row', gap: 14 },
   prVal: { alignItems: 'center', minWidth: 40 },
-  prValNum: { fontSize: 13, fontWeight: '700', color: COLORS.amber },
-  prValLabel: { fontSize: 9, color: COLORS.textFaint, marginTop: 1 },
+  prValNum: { fontSize: 13, fontWeight: '700', color: colors.accent },
+  prValLabel: { fontSize: 9, color: colors.textFaint, marginTop: 1 },
   // אותו סגנון "הצג עוד" שכבר קיים ב-AnalysisScreen.tsx - מסגרת בלבד, בלי מילוי
-  showMoreButton: { marginTop: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: COLORS.hairline, alignItems: 'center' },
-  showMoreText: { color: '#c7c7cc', fontSize: 12.5, fontWeight: '700', textAlign: 'center' },
-  monthLabel: { fontSize: 13, fontWeight: '700', color: COLORS.textFaint, paddingVertical: 10, textAlign: 'right' },
+  showMoreButton: { marginTop: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.line, alignItems: 'center' },
+  showMoreText: { color: colors.textDim, fontSize: 12.5, fontWeight: '700', textAlign: 'center' },
+  monthLabel: { fontSize: 13, fontWeight: '700', color: colors.textFaint, paddingVertical: 10 },
   card: {
-    backgroundColor: COLORS.panel,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: COLORS.hairline,
+    borderColor: colors.line,
     borderRadius: 18,
     padding: 16,
     marginBottom: 10,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardDate: { fontSize: 15, fontWeight: '700', color: COLORS.text, textAlign: 'right' },
-  cardDay: { fontSize: 12, color: COLORS.textFaint, marginTop: 2, textAlign: 'right' },
-  durationBadge: { backgroundColor: COLORS.panelRaised, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  durationText: { fontSize: 13, color: COLORS.textDim, fontWeight: '600' },
+  cardDate: { fontSize: 15, fontWeight: '700', color: colors.text },
+  cardDay: { fontSize: 12, color: colors.textFaint, marginTop: 2 },
+  durationBadge: { backgroundColor: colors.surfaceHigh, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  durationText: { fontSize: 13, color: colors.textDim, fontWeight: '600' },
   cardExercisesTitle: {
     fontSize: 13,
-    color: COLORS.textDim,
+    color: colors.textDim,
     marginTop: 12,
-    textAlign: 'right',
     alignSelf: 'flex-start',
   },
   exerciseBullets: { marginTop: 6, alignItems: 'flex-start' },
-  exerciseBulletText: { fontSize: 13, color: COLORS.textDim, textAlign: 'right', alignSelf: 'flex-start', lineHeight: 19 },
-  bold: { color: COLORS.text, fontWeight: '600' },
+  exerciseBulletText: { fontSize: 13, color: colors.textDim, alignSelf: 'flex-start', lineHeight: 19 },
+  bold: { color: colors.text, fontWeight: '600' },
   cardBottom: {
     flexDirection: 'row',
     gap: 16,
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.hairline,
+    borderTopColor: colors.line,
   },
   metric: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  metricText: { fontSize: 12.5, color: COLORS.textDim, fontWeight: '600' },
+  metricText: { fontSize: 12.5, color: colors.textDim, fontWeight: '600' },
 
-  detailScreen: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: COLORS.bg },
+  detailScreen: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg },
   detailHeader: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.hairline,
+    borderBottomColor: colors.line,
   },
   detailHeaderTop: {
     flexDirection: 'row',
@@ -591,54 +580,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backArrow: { color: COLORS.textDim, fontSize: 20, fontWeight: '700' },
-  backText: { color: COLORS.textDim, fontSize: 14, fontWeight: '600' },
-  deleteBtn: { paddingHorizontal: 4, paddingVertical: 4 },
-  deleteText: { color: '#e0645a', fontSize: 13, fontWeight: '600' },
-  detailTitle: { fontSize: 24, fontWeight: '800', color: COLORS.text, textAlign: 'center', alignSelf: 'center' },
-  detailSub: { fontSize: 13, color: COLORS.textDim, marginTop: 3, textAlign: 'center', alignSelf: 'center' },
+  deleteBtn: { flexDirection: 'row', gap: 6, minHeight: touch.min, paddingHorizontal: spacing.md },
+  detailTitle: { fontSize: 24, fontWeight: '800', color: colors.text, textAlign: 'center', alignSelf: 'center' },
+  detailSub: { fontSize: 13, color: colors.textDim, marginTop: 3, textAlign: 'center', alignSelf: 'center' },
   detailStats: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16 },
   dstat: { flex: 1, alignItems: 'center' },
-  dstatNum: { fontSize: 20, fontWeight: '800', color: COLORS.text },
-  dstatLabel: { fontSize: 10.5, color: COLORS.textFaint, marginTop: 3 },
+  dstatNum: { fontSize: 20, fontWeight: '800', color: colors.text },
+  dstatLabel: { fontSize: 10.5, color: colors.textFaint, marginTop: 3 },
   detailList: { paddingHorizontal: 20, paddingBottom: 30 },
-  exBlock: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.hairline },
-  exName: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 10, textAlign: 'center', alignSelf: 'center' },
-  restBetween: { textAlign: 'center', alignSelf: 'center', color: COLORS.textFaint, fontSize: 12, paddingVertical: 3 },
+  exBlock: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.line },
+  exName: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 10, textAlign: 'center', alignSelf: 'center' },
+  restBetween: { textAlign: 'center', alignSelf: 'center', color: colors.textFaint, fontSize: 12, paddingVertical: 3 },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   setNum: {
     width: 22,
     height: 22,
     borderRadius: 7,
-    backgroundColor: COLORS.panelRaised,
+    backgroundColor: colors.surfaceHigh,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  setNumText: { fontSize: 11.5, fontWeight: '700', color: COLORS.textFaint },
-  setDetail: { fontSize: 13.5, color: COLORS.textDim },
+  setNumText: { fontSize: 11.5, fontWeight: '700', color: colors.textFaint },
+  setDetail: { fontSize: 13.5, color: colors.textDim },
 
   // ---- כרטיס השיאים: כותרת + כפתור ניהול ----
   prCardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
   manageLink: {
-    backgroundColor: 'rgba(255,180,84,0.12)',
+    backgroundColor: colors.accentSoft,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  manageLinkText: { color: COLORS.amber, fontSize: 12, fontWeight: '700' },
+  manageLinkText: { color: colors.accent, fontSize: 12, fontWeight: '700' },
 
   // ---- מסך ניהול שיאים (אותו דפוס בדיוק כמו detailScreen/detailHeader) ----
   manageHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6 },
-  manageTitle: { fontSize: 19, fontWeight: '800', color: COLORS.text },
-  manageSub: { fontSize: 12, color: COLORS.textFaint, marginTop: 1, maxWidth: 260 },
+  manageTitle: { fontSize: 19, fontWeight: '800', color: colors.text },
+  manageSub: { fontSize: 12, color: colors.textFaint, marginTop: 1, maxWidth: 260 },
   manageList: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
-  manageEmptyText: { color: COLORS.textFaint, fontSize: 13, textAlign: 'center', lineHeight: 20, paddingTop: 30 },
+  manageEmptyText: { color: colors.textFaint, fontSize: 13, textAlign: 'center', lineHeight: 20, paddingTop: 30 },
 
   manageRow: {
-    backgroundColor: COLORS.panel,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: COLORS.hairline,
+    borderColor: colors.line,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -648,32 +633,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
   },
-  manageExName: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
-  manageExVals: { fontSize: 11.5, color: COLORS.textFaint },
-  trashBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(229,99,106,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trashText: { color: '#e5636a', fontSize: 15, fontWeight: '700' },
+  manageExName: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  manageExVals: { fontSize: 11.5, color: colors.textFaint },
 
   confirmInline: {
-    backgroundColor: '#241416',
+    backgroundColor: colors.dangerBg,
     borderWidth: 1,
-    borderColor: 'rgba(229,99,106,0.4)',
+    borderColor: colors.dangerBorder,
     borderRadius: 16,
     padding: 14,
     marginBottom: 8,
   },
-  confirmText: { fontSize: 12.5, color: '#f0c2c5', lineHeight: 18, marginBottom: 10, textAlign: 'right' },
+  confirmText: { fontSize: 12.5, color: colors.dangerText, lineHeight: 18, marginBottom: 10 },
   confirmActions: { flexDirection: 'row', gap: 8 },
   confirmBtn: { flex: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center' },
-  confirmCancel: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.hairline },
-  confirmCancelText: { color: COLORS.textDim, fontSize: 12.5, fontWeight: '700' },
-  confirmDeleteBtn: { backgroundColor: '#e5636a' },
-  confirmDeleteText: { color: '#fff', fontSize: 12.5, fontWeight: '700' },
+  confirmCancel: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.line },
+  confirmCancelText: { color: colors.textDim, fontSize: 12.5, fontWeight: '700' },
+  confirmDeleteBtn: { backgroundColor: colors.danger },
+  confirmDeleteText: { color: colors.white, fontSize: 12.5, fontWeight: '700' },
 });

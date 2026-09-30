@@ -17,6 +17,8 @@ import ExerciseNamePicker from '../components/ExerciseNamePicker';
 import { WorkoutCompleteView } from '../components/WorkoutCompleteView';
 import { Workout } from '../types/workout';
 import Svg, { Circle } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, common, fontSize, iconSize, radius, spacing, touch } from '../theme';
 
 function fmt(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -249,10 +251,10 @@ export default function WorkoutTrackerScreen() {
       <View style={styles.centerContainer}>
         <Text style={styles.title}>מוכנים להתחיל?</Text>
         <TouchableOpacity
-          style={styles.startButton}
+          style={[common.primaryButton, styles.startButton]}
           onPress={() => startWorkout(userId)}
         >
-          <Text style={styles.startButtonText}>התחל אימון</Text>
+          <Text style={[common.primaryButtonText, styles.startButtonText]}>התחל אימון</Text>
         </TouchableOpacity>
       </View>
     );
@@ -280,7 +282,7 @@ export default function WorkoutTrackerScreen() {
     return (
       <View style={styles.restOverlay}>
         <View style={styles.restOverlayHeader}>
-          <TouchableOpacity style={styles.restSkipButton} onPress={finishRestEarly}>
+          <TouchableOpacity style={styles.restSkipButton} onPress={finishRestEarly} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
             <Text style={styles.restSkipButtonText}>דלג על המנוחה</Text>
           </TouchableOpacity>
           <Text style={styles.restOverlayPosition}>
@@ -304,7 +306,7 @@ export default function WorkoutTrackerScreen() {
               cx={REST_RING_SIZE / 2}
               cy={REST_RING_SIZE / 2}
               r={REST_RING_RADIUS}
-              stroke={COLOR_SURFACE_3}
+              stroke={colors.surfaceHigh}
               strokeWidth={REST_RING_STROKE}
               fill="none"
             />
@@ -312,7 +314,7 @@ export default function WorkoutTrackerScreen() {
               cx={REST_RING_SIZE / 2}
               cy={REST_RING_SIZE / 2}
               r={REST_RING_RADIUS}
-              stroke={restRemaining <= 5 ? COLOR_DANGER : COLOR_ACCENT}
+              stroke={restRemaining <= 5 ? colors.danger : colors.accent}
               strokeWidth={REST_RING_STROKE}
               strokeLinecap="round"
               fill="none"
@@ -329,15 +331,15 @@ export default function WorkoutTrackerScreen() {
         </View>
 
         <View style={styles.restAddRow}>
-          <TouchableOpacity style={styles.secondaryButtonSmall} onPress={() => extendRest(10)}>
-            <Text style={styles.secondaryButtonText}>10+ שניות</Text>
+          <TouchableOpacity style={[common.secondaryButton, styles.flexOne]} onPress={() => extendRest(10)}>
+            <Text style={common.secondaryButtonText}>10+ שניות</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButtonSmall} onPress={() => extendRest(30)}>
-            <Text style={styles.secondaryButtonText}>30+ שניות</Text>
+          <TouchableOpacity style={[common.secondaryButton, styles.flexOne]} onPress={() => extendRest(30)}>
+            <Text style={common.secondaryButtonText}>30+ שניות</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.primaryButton} onPress={finishRestEarly}>
-          <Text style={styles.primaryButtonText}>סיים מנוחה</Text>
+        <TouchableOpacity style={common.primaryButton} onPress={finishRestEarly}>
+          <Text style={common.primaryButtonText}>סיים מנוחה</Text>
         </TouchableOpacity>
 
         <Text style={styles.restOverlayFooter}>בסיום המנוחה תעברי אוטומטית לטופס הסט הבא</Text>
@@ -351,14 +353,18 @@ export default function WorkoutTrackerScreen() {
       <View style={styles.header}>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={styles.cancelButton}
+            style={[common.iconButton, common.iconButtonDanger]}
             onPress={handleCancelWorkout}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="מחיקת האימון"
           >
-            <Text style={styles.cancelButtonText}>✕</Text>
+            <Ionicons name="trash-outline" size={iconSize.md} color={colors.danger} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.finishButton} onPress={handleFinish} disabled={saving}>
-            <Text style={styles.finishButtonText}>{saving ? 'שומר...' : 'סיום אימון'}</Text>
+          <TouchableOpacity
+            style={[common.dangerButton, styles.finishButton]}
+            onPress={handleFinish}
+            disabled={saving}
+          >
+            <Text style={common.dangerButtonText}>{saving ? 'שומר...' : 'סיום אימון'}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.clockGroup}>
@@ -408,7 +414,7 @@ export default function WorkoutTrackerScreen() {
               <TouchableOpacity
                 style={styles.deleteSetButton}
                 onPress={() => deleteSet(set.id)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               >
                 <Text style={styles.deleteSetText}>✕</Text>
               </TouchableOpacity>
@@ -433,7 +439,7 @@ export default function WorkoutTrackerScreen() {
               <TextInput
                 style={[styles.fieldInput, styles.fieldInputWeight]}
                 placeholder="0"
-                placeholderTextColor="#5a5f68"
+                placeholderTextColor={colors.textFaint}
                 keyboardType="decimal-pad"
                 value={weightText}
                 onChangeText={setWeightText}
@@ -444,7 +450,7 @@ export default function WorkoutTrackerScreen() {
               <TextInput
                 style={[styles.fieldInput, styles.fieldInputReps]}
                 placeholder="0"
-                placeholderTextColor="#5a5f68"
+                placeholderTextColor={colors.textFaint}
                 keyboardType="number-pad"
                 value={repsText}
                 onChangeText={setRepsText}
@@ -458,11 +464,11 @@ export default function WorkoutTrackerScreen() {
           </Text>
           {setError && <Text style={styles.errorText}>{setError}</Text>}
           <TouchableOpacity
-            style={[styles.primaryButton, !canAddSet && styles.buttonDisabled]}
+            style={[common.primaryButton, !canAddSet && common.disabled]}
             onPress={handleAddSet}
             disabled={!canAddSet}
           >
-            <Text style={styles.primaryButtonText}>+ הוספת סט</Text>
+            <Text style={common.primaryButtonText}>+ הוספת סט</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -482,23 +488,27 @@ export default function WorkoutTrackerScreen() {
         </Text>
       </View>
 
-      {/* ניווט בין תרגילים */}
+      {/* ניווט בין תרגילים - בעברית (RTL) "קודם" בימין ומצביע ימינה, "הבא" בשמאל ומצביע שמאלה */}
       <View style={styles.navRow}>
         <TouchableOpacity
           style={[styles.navButton, currentExerciseIndex === 0 && styles.navButtonDisabled]}
           onPress={goToPrevExercise}
           disabled={currentExerciseIndex === 0}
         >
-          <Text style={styles.navButtonText}>‹ תרגיל קודם</Text>
+          <Ionicons name="chevron-forward" size={iconSize.md} color={colors.text} />
+          <Text style={styles.navButtonText}>תרגיל קודם</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.navButton, nextDisabled && styles.navButtonDisabled]}
           onPress={handleNext}
           disabled={nextDisabled}
         >
-          <Text style={styles.navButtonText}>
-            {currentExerciseIndex === totalExercises - 1 ? 'תרגיל הבא +' : 'תרגיל הבא ›'}
-          </Text>
+          <Text style={styles.navButtonText}>תרגיל הבא</Text>
+          <Ionicons
+            name={currentExerciseIndex === totalExercises - 1 ? 'add' : 'chevron-back'}
+            size={iconSize.md}
+            color={colors.text}
+          />
         </TouchableOpacity>
       </View>
 
@@ -516,38 +526,23 @@ export default function WorkoutTrackerScreen() {
   );
 }
 
-// ---- Design tokens (matching the approved interactive mockup) ----
-const COLOR_BG = '#14161a';
-const COLOR_SURFACE = '#1d2025';
-const COLOR_SURFACE_2 = '#23262c';
-const COLOR_SURFACE_3 = '#2b2f36';
-const COLOR_TEXT = '#f2f3f5';
-const COLOR_MUTED = '#8b929a';
-const COLOR_ACCENT = '#f4c430';
-const COLOR_LINE = '#33373e';
-const COLOR_DANGER = '#e5636a';
-
 const REST_RING_SIZE = 220;
 const REST_RING_RADIUS = 96;
 const REST_RING_STROKE = 14;
 const REST_RING_CIRCUMFERENCE = 2 * Math.PI * REST_RING_RADIUS;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLOR_BG },
+  container: { flex: 1, backgroundColor: colors.bg },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLOR_BG,
+    backgroundColor: colors.bg,
   },
-  title: { fontSize: 24, color: COLOR_TEXT, marginBottom: 24, fontWeight: '600' },
-  startButton: {
-    backgroundColor: COLOR_ACCENT,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 14,
-  },
-  startButtonText: { color: '#141414', fontSize: 18, fontWeight: '700' },
+  flexOne: { flex: 1 },
+  title: { fontSize: 24, color: colors.text, marginBottom: spacing.xl, fontWeight: '600' },
+  startButton: { paddingHorizontal: spacing.xxl + 8, minHeight: touch.buttonLarge },
+  startButtonText: { fontSize: fontSize.lg + 1 },
 
   header: {
     flexDirection: 'row',
@@ -556,104 +551,87 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   clockGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cancelButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLOR_LINE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButtonText: { color: COLOR_MUTED, fontSize: 15, fontWeight: '700' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   clockDot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: COLOR_DANGER,
+    backgroundColor: colors.danger,
   },
-  timerLabel: { color: COLOR_MUTED, fontSize: 11, fontWeight: '600' },
-  timer: { fontSize: 14, color: COLOR_TEXT, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  finishButton: {
-    borderWidth: 1,
-    borderColor: 'rgba(229,99,106,0.4)',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  finishButtonText: { color: COLOR_DANGER, fontSize: 13, fontWeight: '700' },
+  timerLabel: { color: colors.textDim, fontSize: fontSize.xs, fontWeight: '600' },
+  timer: { fontSize: fontSize.md, color: colors.text, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  finishButton: { paddingHorizontal: spacing.lg },
 
   exerciseCard: {
-    backgroundColor: COLOR_SURFACE,
+    backgroundColor: colors.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: COLOR_LINE,
-    padding: 16,
+    borderColor: colors.line,
+    padding: spacing.lg,
   },
   nameRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 16,
+    paddingBottom: spacing.lg,
   },
-  nameText: { color: COLOR_TEXT, fontSize: 22, fontWeight: '700' },
-  namePlaceholder: { color: COLOR_MUTED, fontWeight: '400' },
-  nameChevron: { color: COLOR_MUTED, fontSize: 18 },
+  nameText: { color: colors.text, fontSize: fontSize.xl, fontWeight: '700' },
+  namePlaceholder: { color: colors.textDim, fontWeight: '400' },
+  nameChevron: { color: colors.textDim, fontSize: 18 },
 
-  emptyState: { textAlign: 'center', color: COLOR_MUTED, fontSize: 13, paddingVertical: 10 },
+  emptyState: { textAlign: 'center', color: colors.textDim, fontSize: fontSize.sm, paddingVertical: 10 },
 
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
-    backgroundColor: COLOR_SURFACE,
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: COLOR_LINE,
+    borderColor: colors.line,
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   setIndex: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: COLOR_SURFACE_3,
+    backgroundColor: colors.surfaceHigh,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  setIndexText: { color: COLOR_MUTED, fontSize: 12, fontWeight: '700' },
-  setData: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 8 },
+  setIndexText: { color: colors.textDim, fontSize: 12, fontWeight: '700' },
+  setData: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
   setChip: {
-    backgroundColor: COLOR_SURFACE_2,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
     paddingVertical: 5,
     alignItems: 'center',
     minWidth: 58,
   },
-  setChipVal: { color: COLOR_TEXT, fontSize: 15, fontWeight: '700' },
-  setChipUnit: { color: COLOR_MUTED, fontSize: 9, fontWeight: '600', marginTop: 1 },
+  setChipVal: { color: colors.text, fontSize: fontSize.md, fontWeight: '700' },
+  setChipUnit: { color: colors.textDim, fontSize: 9, fontWeight: '600', marginTop: 1 },
   deleteSetButton: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(229,99,106,0.4)',
+    borderColor: colors.dangerBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deleteSetText: { color: COLOR_DANGER, fontSize: 12, fontWeight: '700' },
+  deleteSetText: { color: colors.danger, fontSize: fontSize.sm, fontWeight: '700' },
 
-  restDivider: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 },
-  restDividerLine: { flex: 1, height: 1, backgroundColor: COLOR_LINE },
+  restDivider: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginVertical: spacing.xs },
+  restDividerLine: { flex: 1, height: 1, backgroundColor: colors.line },
   restDividerLabel: {
-    color: COLOR_MUTED,
-    fontSize: 11,
+    color: colors.textDim,
+    fontSize: fontSize.xs,
     fontWeight: '600',
-    backgroundColor: COLOR_SURFACE_3,
+    backgroundColor: colors.surfaceHigh,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
@@ -661,38 +639,38 @@ const styles = StyleSheet.create({
   },
 
   addSetForm: {
-    backgroundColor: COLOR_SURFACE_2,
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: COLOR_LINE,
+    borderColor: colors.line,
     borderRadius: 18,
     padding: 14,
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
-  fieldRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
+  fieldRow: { flexDirection: 'row', gap: 10, marginBottom: spacing.sm },
   fieldGroup: { flex: 1 },
-  fieldLabel: { color: COLOR_MUTED, fontSize: 12, fontWeight: '600', marginBottom: 6, textAlign: 'center' },
+  fieldLabel: { color: colors.textDim, fontSize: 12, fontWeight: '600', marginBottom: 6, textAlign: 'center' },
   fieldInput: {
-    backgroundColor: COLOR_SURFACE,
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: COLOR_LINE,
-    borderRadius: 12,
-    paddingVertical: 10,
-    color: COLOR_TEXT,
+    borderColor: colors.line,
+    borderRadius: radius.md,
+    minHeight: touch.button,
+    color: colors.text,
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
   },
-  fieldInputWeight: { borderColor: '#4a90d9' },
-  fieldInputReps: { borderColor: '#5bc490' },
-  fieldHint: { color: COLOR_MUTED, fontSize: 10, textAlign: 'center', marginBottom: 10 },
-  errorText: { color: COLOR_DANGER, fontSize: 12, textAlign: 'center', marginBottom: 8 },
+  fieldInputWeight: { borderColor: colors.info },
+  fieldInputReps: { borderColor: colors.teal },
+  fieldHint: { color: colors.textDim, fontSize: 10, textAlign: 'center', marginBottom: 10 },
+  errorText: { color: colors.danger, fontSize: 12, textAlign: 'center', marginBottom: spacing.sm },
 
   restOverlay: {
     flex: 1,
-    backgroundColor: COLOR_BG,
+    backgroundColor: colors.bg,
     paddingHorizontal: 20,
     paddingTop: 56,
-    paddingBottom: 32,
+    paddingBottom: spacing.xxl,
     justifyContent: 'space-between',
   },
   restOverlayHeader: {
@@ -702,73 +680,59 @@ const styles = StyleSheet.create({
   },
   restSkipButton: {
     borderWidth: 1,
-    borderColor: COLOR_LINE,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
+    borderColor: colors.line,
+    minHeight: touch.min,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  restSkipButtonText: { color: COLOR_MUTED, fontSize: 12, fontWeight: '600' },
-  restOverlayPosition: { color: COLOR_MUTED, fontSize: 11, fontWeight: '600' },
-  restOverlayLabel: { textAlign: 'center', color: COLOR_MUTED, fontSize: 13, fontWeight: '600', marginTop: 4 },
+  restSkipButtonText: { color: colors.textDim, fontSize: fontSize.sm, fontWeight: '600' },
+  restOverlayPosition: { color: colors.textDim, fontSize: fontSize.xs, fontWeight: '600' },
+  restOverlayLabel: { textAlign: 'center', color: colors.textDim, fontSize: fontSize.sm, fontWeight: '600', marginTop: spacing.xs },
   restOverlaySubtitle: {
     textAlign: 'center',
-    color: COLOR_TEXT,
-    fontSize: 15,
+    color: colors.text,
+    fontSize: fontSize.md,
     fontWeight: '700',
-    marginTop: 4,
-    marginBottom: 8,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
   },
-  restCountdownHint: { fontSize: 12, color: COLOR_MUTED, fontWeight: '600', marginTop: 4 },
-  restOverlayFooter: { textAlign: 'center', color: '#5a5f68', fontSize: 11, marginTop: 14 },
+  restCountdownHint: { fontSize: 12, color: colors.textDim, fontWeight: '600', marginTop: spacing.xs },
+  restOverlayFooter: { textAlign: 'center', color: colors.textFaint, fontSize: fontSize.xs, marginTop: 14 },
   restRingWrap: {
     width: REST_RING_SIZE,
     height: REST_RING_SIZE,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
   },
   restRingSvg: { transform: [{ rotate: '-90deg' }] },
   restRingCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  restCountdown: { fontSize: 34, fontWeight: '800', color: COLOR_TEXT, fontVariant: ['tabular-nums'] },
-  restCountdownUrgent: { color: COLOR_DANGER },
+  restCountdown: { fontSize: 34, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
+  restCountdownUrgent: { color: colors.danger },
   restAddRow: { flexDirection: 'row', gap: 10, width: '100%', marginBottom: 10 },
 
-  primaryButton: {
-    backgroundColor: COLOR_ACCENT,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  primaryButtonText: { color: '#141414', fontWeight: '700', fontSize: 15 },
-  secondaryButtonSmall: {
-    flex: 1,
-    backgroundColor: COLOR_SURFACE,
-    borderWidth: 1,
-    borderColor: COLOR_LINE,
-    borderRadius: 12,
-    paddingVertical: 11,
-    alignItems: 'center',
-  },
-  secondaryButtonText: { color: COLOR_TEXT, fontWeight: '600', fontSize: 13 },
-  buttonDisabled: { opacity: 0.4 },
-
-  bottomProgress: { alignItems: 'center', gap: 8, marginTop: 16 },
+  bottomProgress: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLOR_LINE },
-  dotActive: { backgroundColor: COLOR_ACCENT, width: 20, borderRadius: 4 },
-  positionText: { color: COLOR_MUTED, fontSize: 13, fontWeight: '500' },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.line },
+  dotActive: { backgroundColor: colors.accent, width: 20, borderRadius: 4 },
+  positionText: { color: colors.textDim, fontSize: fontSize.sm, fontWeight: '500' },
 
-  navRow: { flexDirection: 'row', gap: 10, marginTop: 10, marginBottom: 24 },
+  navRow: { flexDirection: 'row', gap: 10, marginTop: 10, marginBottom: spacing.xl },
   navButton: {
     flex: 1,
-    backgroundColor: COLOR_SURFACE_2,
-    borderWidth: 1,
-    borderColor: COLOR_LINE,
-    borderRadius: 14,
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: touch.buttonLarge,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.lg,
   },
   navButtonDisabled: { opacity: 0.35 },
-  navButtonText: { color: COLOR_TEXT, fontSize: 14, fontWeight: '600' },
+  navButtonText: { color: colors.text, fontSize: fontSize.md + 1, fontWeight: '600' },
 });

@@ -17,6 +17,7 @@ import {
   signInWithGoogle,
   authErrorMessage,
 } from '../lib/auth';
+import { colors, common, fontSize, radius, spacing, touch } from '../theme';
 
 type Mode = 'signIn' | 'signUp';
 
@@ -76,7 +77,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="you@example.com"
-            placeholderTextColor="#5a5f68"
+            placeholderTextColor={colors.textFaint}
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
@@ -88,7 +89,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="לפחות 6 תווים"
-            placeholderTextColor="#5a5f68"
+            placeholderTextColor={colors.textFaint}
             secureTextEntry
             autoCapitalize="none"
             value={password}
@@ -98,14 +99,14 @@ export default function LoginScreen() {
           {error && <Text style={styles.errorText}>{error}</Text>}
 
           <TouchableOpacity
-            style={[styles.primaryButton, !canSubmit && styles.buttonDisabled]}
+            style={[common.primaryButton, styles.submitButton, !canSubmit && common.disabled]}
             onPress={handleSubmit}
             disabled={!canSubmit}
           >
             {submitting ? (
-              <ActivityIndicator color="#141414" />
+              <ActivityIndicator color={colors.onAccent} />
             ) : (
-              <Text style={styles.primaryButtonText}>
+              <Text style={common.primaryButtonText}>
                 {mode === 'signIn' ? 'התחברות' : 'הרשמה'}
               </Text>
             )}
@@ -129,14 +130,14 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.googleButton, googleSubmitting && styles.buttonDisabled]}
+            style={[common.secondaryButton, googleSubmitting && common.disabled]}
             onPress={handleGoogle}
             disabled={googleSubmitting}
           >
             {googleSubmitting ? (
-              <ActivityIndicator color="#f1f0ec" />
+              <ActivityIndicator color={colors.text} />
             ) : (
-              <Text style={styles.googleButtonText}>המשך עם Google</Text>
+              <Text style={common.secondaryButtonText}>המשך עם Google</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -146,51 +147,34 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f10' },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  title: { fontSize: 30, fontWeight: '800', color: '#f1f0ec', textAlign: 'center' },
-  subtitle: { fontSize: 15, color: '#9a9ca4', textAlign: 'center', marginTop: 6, marginBottom: 32 },
-  form: { gap: 4 },
-  label: { color: '#9a9ca4', fontSize: 13, fontWeight: '600', marginBottom: 6, textAlign: 'right' },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
+  title: { fontSize: 30, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  subtitle: { fontSize: fontSize.md, color: colors.textDim, textAlign: 'center', marginTop: 6, marginBottom: spacing.xxl },
+  form: { gap: spacing.xs },
+  label: { color: colors.textDim, fontSize: fontSize.sm, fontWeight: '600', marginBottom: 6 },
   input: {
-    backgroundColor: '#1c1c1e',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: '#2c2c2e',
-    borderRadius: 12,
+    borderColor: colors.line,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: '#f1f0ec',
+    minHeight: touch.button,
+    color: colors.text,
     fontSize: 16,
-    textAlign: 'right',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
-  errorText: { color: '#ff5b5b', fontSize: 13, textAlign: 'center', marginBottom: 12 },
-  primaryButton: {
-    backgroundColor: '#ffb454',
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  primaryButtonText: { color: '#141414', fontWeight: '700', fontSize: 16 },
-  buttonDisabled: { opacity: 0.5 },
+  errorText: { color: colors.danger, fontSize: fontSize.sm, textAlign: 'center', marginBottom: spacing.md },
+  submitButton: { marginTop: spacing.xs },
   switchModeText: {
-    color: '#ffb454',
-    fontSize: 13,
+    color: colors.accent,
+    fontSize: fontSize.sm + 1,
     fontWeight: '600',
     textAlign: 'center',
-    marginTop: 16,
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
   },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 24, marginBottom: 20 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#2c2c2e' },
-  dividerText: { color: '#64666f', fontSize: 12, fontWeight: '600' },
-  googleButton: {
-    backgroundColor: '#1c1c1e',
-    borderWidth: 1,
-    borderColor: '#2c2c2e',
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  googleButtonText: { color: '#f1f0ec', fontWeight: '700', fontSize: 15 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.md, marginBottom: 20 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.line },
+  dividerText: { color: colors.textFaint, fontSize: 12, fontWeight: '600' },
 });

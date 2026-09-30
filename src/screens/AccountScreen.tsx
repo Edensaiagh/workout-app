@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../lib/authContext';
 import { logOut } from '../lib/auth';
+import { colors, common, fontSize } from '../theme';
 
 export default function AccountScreen() {
   const { user } = useAuth();
@@ -33,11 +34,11 @@ export default function AccountScreen() {
       </View>
       <Text style={styles.email}>{user?.email ?? user?.displayName ?? 'משתמש'}</Text>
 
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} disabled={signingOut}>
+      <TouchableOpacity style={common.dangerButton} onPress={handleSignOut} disabled={signingOut}>
         {signingOut ? (
-          <ActivityIndicator color="#ff5b5b" />
+          <ActivityIndicator color={colors.danger} />
         ) : (
-          <Text style={styles.signOutText}>התנתקות</Text>
+          <Text style={common.dangerButtonText}>התנתקות</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -45,27 +46,18 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f10', alignItems: 'center', paddingTop: 80, paddingHorizontal: 24 },
+  container: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', paddingTop: 80, paddingHorizontal: 24 },
   avatar: {
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: '#1c1c1e',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: '#2c2c2e',
+    borderColor: colors.line,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
-  avatarText: { color: '#ffb454', fontSize: 32, fontWeight: '800' },
-  email: { color: '#f1f0ec', fontSize: 17, fontWeight: '600', marginBottom: 40 },
-  signOutButton: {
-    borderWidth: 1,
-    borderColor: 'rgba(255,91,91,0.4)',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    alignItems: 'center',
-  },
-  signOutText: { color: '#ff5b5b', fontWeight: '700', fontSize: 15 },
+  avatarText: { color: colors.accent, fontSize: 32, fontWeight: '800' },
+  email: { color: colors.text, fontSize: fontSize.lg, fontWeight: '600', marginBottom: 40 },
 });

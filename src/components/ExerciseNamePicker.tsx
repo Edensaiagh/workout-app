@@ -21,6 +21,7 @@ import {
   MUSCLE_GROUPS,
   MuscleGroup,
 } from '../constants/exerciseLibrary';
+import { colors, common, fontSize, radius, spacing, touch } from '../theme';
 
 type Tab = 'library' | 'history';
 
@@ -116,7 +117,7 @@ export default function ExerciseNamePicker({
             value={text}
             onChangeText={setText}
             placeholder="הקלד/י שם תרגיל"
-            placeholderTextColor="#888"
+            placeholderTextColor={colors.textFaint}
             selectTextOnFocus
             autoFocus
           />
@@ -186,11 +187,11 @@ export default function ExerciseNamePicker({
           />
 
           <View style={styles.actionsRow}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.cancelButtonText}>ביטול</Text>
+            <TouchableOpacity style={[common.secondaryButton, styles.actionButton]} onPress={onClose}>
+              <Text style={common.secondaryButtonText}>ביטול</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.confirmButton} onPress={() => confirm(text)}>
-              <Text style={styles.confirmButtonText}>שמור</Text>
+            <TouchableOpacity style={[common.primaryButton, styles.actionButton]} onPress={() => confirm(text)}>
+              <Text style={common.primaryButtonText}>שמור</Text>
             </TouchableOpacity>
           </View>
         </SafeSheet>
@@ -203,88 +204,74 @@ export default function ExerciseNamePicker({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#1c1c1e',
+    backgroundColor: colors.surface,
     borderTopStartRadius: 20,
     borderTopEndRadius: 20,
-    padding: 16,
+    padding: spacing.lg,
     maxHeight: '80%',
   },
-  title: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 12, textAlign: 'center' },
+  title: { color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: spacing.md, textAlign: 'center' },
   input: {
-    backgroundColor: '#2c2c2e',
-    color: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    backgroundColor: colors.surfaceHigh,
+    color: colors.text,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    minHeight: touch.button,
     fontSize: 16,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
-  tabsRow: { flexDirection: 'row', gap: 8, marginBottom: 8, flexShrink: 0 },
+  tabsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm, flexShrink: 0 },
   tab: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
+    minHeight: touch.min,
+    borderRadius: radius.sm,
     alignItems: 'center',
-    backgroundColor: '#2c2c2e',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceHigh,
   },
-  tabActive: { backgroundColor: '#5b8cff' },
-  tabText: { color: '#ccc', fontSize: 13, fontWeight: '600' },
-  tabTextActive: { color: '#fff' },
+  tabActive: { backgroundColor: colors.accent },
+  tabText: { color: colors.textDim, fontSize: fontSize.sm + 1, fontWeight: '600' },
+  tabTextActive: { color: colors.onAccent },
   // גובה קבוע, כדי ששורת הצ'יפים לא תתכווץ כשהרשימה הארוכה תופסת את המקום במודאל
-  chipsScroll: { height: 40, flexGrow: 0, flexShrink: 0, marginBottom: 8 },
-  chipsContent: { gap: 8, alignItems: 'center' },
+  chipsScroll: { height: touch.min, flexGrow: 0, flexShrink: 0, marginBottom: spacing.sm },
+  chipsContent: { gap: spacing.sm, alignItems: 'center' },
   chip: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: '#3a3a3c',
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    borderColor: colors.lineStrong,
+    borderRadius: radius.pill,
+    minHeight: 40,
+    paddingHorizontal: spacing.md + 2,
   },
-  chipActive: { backgroundColor: '#5b8cff', borderColor: '#5b8cff' },
-  chipText: { color: '#ccc', fontSize: 13 },
-  chipTextActive: { color: '#fff' },
-  chipCount: { color: '#8e8e93', fontSize: 11 },
-  chipCountActive: { color: '#dbe5ff' },
-  countText: { color: '#8e8e93', fontSize: 12, marginBottom: 4 },
-  list: { marginBottom: 12, flexGrow: 0, flexShrink: 1, minHeight: 120 },
-  emptyText: { color: '#888', fontSize: 13, textAlign: 'center', paddingVertical: 16 },
+  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipText: { color: colors.textDim, fontSize: fontSize.sm + 1 },
+  chipTextActive: { color: colors.onAccent, fontWeight: '700' },
+  chipCount: { color: colors.textFaint, fontSize: fontSize.xs },
+  chipCountActive: { color: colors.onAccent },
+  countText: { color: colors.textFaint, fontSize: 12, marginBottom: spacing.xs },
+  list: { marginBottom: spacing.md, flexGrow: 0, flexShrink: 1, minHeight: 120 },
+  emptyText: { color: colors.textDim, fontSize: fontSize.sm, textAlign: 'center', paddingVertical: spacing.lg },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    gap: spacing.sm,
+    minHeight: touch.button,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2c2c2e',
+    borderBottomColor: colors.line,
   },
   itemTextWrap: { flexShrink: 1 },
-  itemText: { color: '#eee', fontSize: 15 },
-  itemTextEn: { color: '#8e8e93', fontSize: 12, marginTop: 2 },
-  itemGroup: { color: '#8e8e93', fontSize: 11 },
-  actionsRow: { flexDirection: 'row', gap: 8, flexShrink: 0 },
-  cancelButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#3a3a3c',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  cancelButtonText: { color: '#ccc', fontSize: 14, fontWeight: '600' },
-  confirmButton: {
-    flex: 1,
-    backgroundColor: '#5b8cff',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  confirmButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  itemText: { color: colors.text, fontSize: fontSize.md },
+  itemTextEn: { color: colors.textFaint, fontSize: 12, marginTop: 2 },
+  itemGroup: { color: colors.textFaint, fontSize: fontSize.xs },
+  actionsRow: { flexDirection: 'row', gap: spacing.sm, flexShrink: 0 },
+  actionButton: { flex: 1 },
 });

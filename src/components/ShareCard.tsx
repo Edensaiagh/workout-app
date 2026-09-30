@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme';
 
 export interface ExerciseVolume {
   name: string;
@@ -25,8 +26,11 @@ interface ShareCardProps {
   appName?: string;
 }
 
-const AMBER = '#ffb454'; // צבע ה-accent האמיתי של האפליקציה (ראה App.tsx)
-const AMBER_LOW = '#4a3510';
+// הכרטיס הזה מצולם כתמונה לשיתוף - לכן הוא בכוונה כהה קבוע ולא תלוי במצב של המכשיר
+const AMBER = colors.accent;
+const AMBER_LOW = colors.accentDim;
+const CARD_BG = colors.shareCardBg;
+const CARD_BORDER = colors.shareCardBorder;
 
 const WEEKDAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const MONTH_NAMES = [
@@ -71,14 +75,14 @@ export function ShareCard({ data, expanded, onToggleExpand, appName = 'שם הא
     <View style={styles.card}>
       <View style={styles.headerRow}>
         <View style={styles.logoBadge}>
-          <Ionicons name="flash" size={15} color="#241704" />
+          <Ionicons name="flash" size={15} color={colors.onAccent} />
         </View>
         <Text style={styles.appName}>{appName}</Text>
       </View>
 
       <View style={styles.subtitleRow}>
         <Text style={styles.subtitleText}>{data.durationMinutes} דקות</Text>
-        <Ionicons name="sparkles" size={14} color={AMBER} style={{ marginRight: 6 }} />
+        <Ionicons name="sparkles" size={14} color={AMBER} style={{ marginStart: 6 }} />
       </View>
 
       <Text style={styles.titleDate}>{formatShareCardDate(data.date)}</Text>
@@ -105,7 +109,7 @@ export function ShareCard({ data, expanded, onToggleExpand, appName = 'שם הא
             const pct = maxVol > 0 ? (ex.volumeKg / maxVol) * 100 : 0;
             const t = maxVol === minVol ? 1 : (ex.volumeKg - minVol) / (maxVol - minVol);
             const barColor = lerpColor(AMBER_LOW, AMBER, 0.35 + t * 0.65);
-            const textColor = idx === 0 ? AMBER : '#8a8a8a';
+            const textColor = idx === 0 ? AMBER : colors.textDim;
             return (
               <View key={`${ex.name}-${idx}`}>
                 <View style={styles.exerciseLabelRow}>
@@ -150,38 +154,40 @@ const styles = StyleSheet.create({
     width: 270,
     aspectRatio: 9 / 16,
     borderRadius: 22,
-    backgroundColor: '#141414',
+    backgroundColor: CARD_BG,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: CARD_BORDER,
     padding: 22,
     justifyContent: 'space-between',
   },
-  headerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
+  // האפליקציה רצה ב-RTL כפוי: 'row' כבר מימין לשמאל, ובלי textAlign ידני הטקסט מיושר לימין
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logoBadge: {
     width: 26, height: 26, borderRadius: 8, backgroundColor: AMBER,
     alignItems: 'center', justifyContent: 'center',
   },
-  appName: { fontSize: 13, fontWeight: '500', color: '#eeeeee', textAlign: 'right' },
-  subtitleRow: { flexDirection: 'row-reverse', alignItems: 'center', marginTop: 12 },
-  subtitleText: { fontSize: 12, color: '#8a8a8a', textAlign: 'right' },
-  titleDate: { fontSize: 22, fontWeight: '500', color: '#ffffff', textAlign: 'right', marginTop: 6, marginBottom: 14 },
+  appName: { fontSize: 13, fontWeight: '500', color: colors.text },
+  subtitleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
+  subtitleText: { fontSize: 12, color: colors.textDim },
+  titleDate: { fontSize: 22, fontWeight: '500', color: colors.white, marginTop: 6, marginBottom: 14 },
   statsRow: { flexDirection: 'row', justifyContent: 'center', gap: 22, marginBottom: 16 },
   statItem: { alignItems: 'center' },
   statValue: { fontSize: 20, fontWeight: '500', color: AMBER },
-  statLabel: { fontSize: 10, color: '#8a8a8a', marginTop: 2 },
+  statLabel: { fontSize: 10, color: colors.textDim, marginTop: 2 },
   exerciseSection: { marginBottom: 14 },
-  exerciseSectionLabel: { fontSize: 11, color: '#8a8a8a', marginBottom: 8, textAlign: 'right' },
-  exerciseLabelRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginBottom: 2 },
-  exerciseName: { color: '#cfcfcf', textAlign: 'right' },
-  exerciseVolume: { textAlign: 'left' },
-  barTrack: { backgroundColor: '#2a2a2a', borderRadius: 3, overflow: 'hidden' },
-  barFill: { borderRadius: 3, alignSelf: 'flex-end' },
-  moreButton: { color: AMBER, fontSize: 11, marginTop: 4, textAlign: 'right' },
+  exerciseSectionLabel: { fontSize: 11, color: colors.textDim, marginBottom: 8 },
+  exerciseLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
+  exerciseName: { color: colors.text },
+  exerciseVolume: {},
+  barTrack: { backgroundColor: CARD_BORDER, borderRadius: 3, overflow: 'hidden' },
+  // ב-RTL הצד "flex-start" הוא הימין - העמודה גדלה מימין לשמאל
+  barFill: { borderRadius: 3, alignSelf: 'flex-start' },
+  moreButton: { color: AMBER, fontSize: 11, marginTop: 4 },
   prBadge: {
-    flexDirection: 'row-reverse', alignItems: 'center', gap: 5, alignSelf: 'flex-start',
-    backgroundColor: '#2a2008', borderWidth: 1, borderColor: '#4a3a12', borderRadius: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start',
+    backgroundColor: colors.accentBadgeBg, borderWidth: 1, borderColor: colors.accentBadgeBorder, borderRadius: 8,
     paddingHorizontal: 10, paddingVertical: 5,
   },
   prBadgeText: { fontSize: 12, color: AMBER },
-  footer: { fontSize: 10, color: '#5a5a5a', textAlign: 'center' },
+  footer: { fontSize: 10, color: colors.textFaint, textAlign: 'center' },
 });

@@ -14,19 +14,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../lib/authContext'; // ⚠️ עדכני אם הנתיב/החתימה אצלך שונים
 import { getUserWorkouts } from '../lib/workoutService';
 import { Workout } from '../types/workout';
-
-// ---------- עיצוב ----------
-// פלטת הצבעים המקורית מהמוקאפ המאושר
-const ACCENT = '#5b8cff';
-const BG = '#0f0f10';
-const CARD_BG = '#1c1c1e';
-const CARD_BG_2 = '#141415';
-const BORDER = '#2c2c2e';
-const TEXT = '#ffffff';
-const MUTED = '#9a9a9e';
-const FAINT = '#6a6a6e';
-const WARN = '#ff9f0a';
-const GREEN = '#34c759';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, iconSize, radius, spacing, touch } from '../theme';
 
 const HE_MONTHS_FULL = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 const HE_MONTHS_SHORT = ['ינו', 'פבר', 'מרץ', 'אפר', 'מאי', 'יונ', 'יול', 'אוג', 'ספט', 'אוק', 'נוב', 'דצמ'];
@@ -245,7 +234,7 @@ export default function AnalysisScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator color={ACCENT} size="large" />
+        <ActivityIndicator color={colors.accent} size="large" />
       </View>
     );
   }
@@ -291,7 +280,7 @@ export default function AnalysisScreen() {
 
         <View style={[styles.rowBetween, { marginTop: 16, marginBottom: 16 }]}>
           <TouchableOpacity onPress={goPrev} disabled={atOldest} style={[styles.navCircle, atOldest && styles.navCircleDisabled]}>
-            <Text style={styles.navCircleText}>›</Text>
+            <Ionicons name="chevron-forward" size={iconSize.md} color={colors.text} />
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
             <Text style={styles.periodLabel}>{activityView === 'week' ? selectedWeek.label : selectedMonth.label}</Text>
@@ -301,7 +290,7 @@ export default function AnalysisScreen() {
             </Text>
           </View>
           <TouchableOpacity onPress={goNext} disabled={atNewest} style={[styles.navCircle, atNewest && styles.navCircleDisabled]}>
-            <Text style={styles.navCircleText}>‹</Text>
+            <Ionicons name="chevron-back" size={iconSize.md} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -344,8 +333,8 @@ export default function AnalysisScreen() {
             <Text style={styles.avgBoxLabel}>ממוצע אימונים לשבוע (4 שבועות אחרונים)</Text>
             <Text style={styles.avgBoxValue}>{avgPerWeek}</Text>
           </View>
-          <View style={[styles.trendBadge, { backgroundColor: trendUp ? 'rgba(52,199,89,0.15)' : 'rgba(255,159,10,0.15)' }]}>
-            <Text style={[styles.trendBadgeText, { color: trendUp ? GREEN : WARN }]}>
+          <View style={[styles.trendBadge, { backgroundColor: trendUp ? `${colors.success}26` : `${colors.warning}26` }]}>
+            <Text style={[styles.trendBadgeText, { color: trendUp ? colors.success : colors.warning }]}>
               {(trendUp ? '▲ +' : '▼ ') + trendPct + '% לעומת 4 השבועות הקודמים'}
             </Text>
           </View>
@@ -406,11 +395,11 @@ export default function AnalysisScreen() {
 
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: ACCENT }]} />
+            <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
             <Text style={styles.legendText}>עבודה</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: WARN }]} />
+            <View style={[styles.legendDot, { backgroundColor: colors.teal }]} />
             <Text style={styles.legendText}>מנוחה</Text>
           </View>
         </View>
@@ -425,8 +414,8 @@ export default function AnalysisScreen() {
                 <Text style={styles.restWorkDuration}>סה"כ {item.durationMin} דק׳</Text>
               </View>
               <View style={styles.stackedBar}>
-                <View style={{ flex: workPct || 0.0001, backgroundColor: ACCENT }} />
-                <View style={{ flex: restPct || 0.0001, backgroundColor: WARN }} />
+                <View style={{ flex: workPct || 0.0001, backgroundColor: colors.accent }} />
+                <View style={{ flex: restPct || 0.0001, backgroundColor: colors.teal }} />
               </View>
               <View style={styles.rowBetween}>
                 <Text style={styles.restWorkSubLabel}>עבודה: {item.workMin} דק׳</Text>
@@ -453,82 +442,78 @@ export default function AnalysisScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
-  centerContainer: { flex: 1, backgroundColor: BG, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  errorText: { color: WARN, fontSize: 15, textAlign: 'center', writingDirection: 'rtl' },
-  emptyTitle: { color: TEXT, fontSize: 18, fontWeight: '700', marginBottom: 8, textAlign: 'center', writingDirection: 'rtl' },
-  emptySubtitle: { color: MUTED, fontSize: 14, textAlign: 'center', writingDirection: 'rtl' },
+  container: { flex: 1, backgroundColor: colors.bg },
+  centerContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  errorText: { color: colors.warning, fontSize: 15, textAlign: 'center', writingDirection: 'rtl' },
+  emptyTitle: { color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: 8, textAlign: 'center', writingDirection: 'rtl' },
+  emptySubtitle: { color: colors.textDim, fontSize: 14, textAlign: 'center', writingDirection: 'rtl' },
 
-  // עם forceRTL פעיל, textAlign 'right'/'left' על טקסט שממלא את כל הרוחב מתהפך
-  // ויזואלית (זו התנהגות ידועה של RN/Android תחת RTL כפוי) - לכן 'left' כאן
-  // מציג בפועל טקסט מיושר לימין.
-  pageTitle: { color: TEXT, fontSize: 22, fontWeight: '800', textAlign: 'left', writingDirection: 'rtl' },
+  pageTitle: { color: colors.text, fontSize: 22, fontWeight: '800', writingDirection: 'rtl' },
 
-  card: { backgroundColor: CARD_BG, borderRadius: 16, padding: 18, marginTop: 22 },
-  cardTitle: { color: TEXT, fontSize: 14, fontWeight: '700', textAlign: 'left', writingDirection: 'rtl' },
-  cardSubtitle: { color: MUTED, fontSize: 11.5, marginTop: 2, marginBottom: 16, textAlign: 'left', writingDirection: 'rtl' },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginTop: 22 },
+  cardTitle: { color: colors.text, fontSize: 14, fontWeight: '700', writingDirection: 'rtl' },
+  cardSubtitle: { color: colors.textDim, fontSize: 11.5, marginTop: 2, marginBottom: 16, writingDirection: 'rtl' },
 
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 
-  segmentSmall: { flexDirection: 'row', backgroundColor: CARD_BG_2, borderRadius: 9, padding: 3, gap: 3 },
-  segmentSmallBtn: { paddingVertical: 7, paddingHorizontal: 14, borderRadius: 7 },
-  segmentSmallBtnActive: { backgroundColor: ACCENT },
-  segmentSmallText: { color: MUTED, fontSize: 12, fontWeight: '700' },
-  segmentSmallTextActive: { color: '#0f0f10' },
+  segmentSmall: { flexDirection: 'row', backgroundColor: colors.bg, borderRadius: 9, padding: 3, gap: 3 },
+  segmentSmallBtn: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 7 },
+  segmentSmallBtnActive: { backgroundColor: colors.accent },
+  segmentSmallText: { color: colors.textDim, fontSize: 12, fontWeight: '700' },
+  segmentSmallTextActive: { color: colors.onAccent },
 
-  navCircle: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: BORDER, justifyContent: 'center', alignItems: 'center' },
+  navCircle: { width: touch.min, height: touch.min, borderRadius: touch.min / 2, borderWidth: 1, borderColor: colors.line, justifyContent: 'center', alignItems: 'center' },
   navCircleDisabled: { opacity: 0.35 },
-  navCircleText: { color: TEXT, fontSize: 16 },
-  periodLabel: { color: TEXT, fontSize: 13, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
-  periodCount: { color: FAINT, fontSize: 11, marginTop: 1, textAlign: 'center', writingDirection: 'rtl' },
+  periodLabel: { color: colors.text, fontSize: 13, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
+  periodCount: { color: colors.textFaint, fontSize: 11, marginTop: 1, textAlign: 'center', writingDirection: 'rtl' },
 
   weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  dayDot: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: BORDER, backgroundColor: 'transparent' },
-  dayDotActive: { backgroundColor: ACCENT, borderColor: ACCENT },
-  dayLetter: { color: FAINT, fontSize: 10, textAlign: 'center', writingDirection: 'rtl' },
+  dayDot: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: colors.line, backgroundColor: 'transparent' },
+  dayDotActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  dayLetter: { color: colors.textFaint, fontSize: 10, textAlign: 'center', writingDirection: 'rtl' },
 
-  calHeaderText: { width: 38, textAlign: 'center', writingDirection: 'rtl', color: FAINT, fontSize: 9.5, marginBottom: 6 },
+  calHeaderText: { width: 38, textAlign: 'center', writingDirection: 'rtl', color: colors.textFaint, fontSize: 9.5, marginBottom: 6 },
   calCell: { width: 38, height: 38, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  calCellInactive: { borderWidth: 1, borderColor: BORDER },
-  calCellActive: { borderWidth: 2, borderColor: ACCENT },
-  calCellText: { color: MUTED, fontSize: 11, textAlign: 'center', writingDirection: 'rtl' },
-  calCellTextActive: { color: TEXT, fontWeight: '800' },
+  calCellInactive: { borderWidth: 1, borderColor: colors.line },
+  calCellActive: { borderWidth: 2, borderColor: colors.accent },
+  calCellText: { color: colors.textDim, fontSize: 11, textAlign: 'center', writingDirection: 'rtl' },
+  calCellTextActive: { color: colors.text, fontWeight: '800' },
 
-  avgBlock: { alignItems: 'center', gap: 10, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: BORDER },
-  avgBox: { alignItems: 'center', paddingVertical: 8, paddingHorizontal: 18, borderRadius: 8, backgroundColor: 'rgba(91,140,255,0.12)' },
-  avgBoxLabel: { color: MUTED, fontSize: 11, textAlign: 'center', writingDirection: 'rtl' },
-  avgBoxValue: { color: TEXT, fontSize: 17, fontWeight: '800', marginTop: 2, textAlign: 'center', writingDirection: 'rtl' },
+  avgBlock: { alignItems: 'center', gap: 10, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.line },
+  avgBox: { alignItems: 'center', paddingVertical: 8, paddingHorizontal: 18, borderRadius: 8, backgroundColor: colors.accentSoft },
+  avgBoxLabel: { color: colors.textDim, fontSize: 11, textAlign: 'center', writingDirection: 'rtl' },
+  avgBoxValue: { color: colors.text, fontSize: 17, fontWeight: '800', marginTop: 2, textAlign: 'center', writingDirection: 'rtl' },
   trendBadge: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
   trendBadgeText: { fontSize: 11.5, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
 
-  segmentWide: { flexDirection: 'row', backgroundColor: CARD_BG, borderRadius: 12, padding: 4, gap: 4, marginTop: 22 },
-  segmentWideBtn: { flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 9 },
-  segmentWideBtnActive: { backgroundColor: ACCENT },
-  segmentWideText: { color: MUTED, fontSize: 13, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
-  segmentWideTextActive: { color: '#0f0f10' },
+  segmentWide: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, gap: 4, marginTop: 22 },
+  segmentWideBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: touch.min, borderRadius: 9 },
+  segmentWideBtnActive: { backgroundColor: colors.accent },
+  segmentWideText: { color: colors.textDim, fontSize: 13, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
+  segmentWideTextActive: { color: colors.onAccent },
 
   segmentTiny: { flexDirection: 'row', gap: 4, marginBottom: 14 },
-  segmentTinyBtn: { paddingVertical: 7, paddingHorizontal: 14, borderRadius: 9 },
+  segmentTinyBtn: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 9 },
 
   barsRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
   barColumn: { height: 110, width: '100%', justifyContent: 'flex-end', alignItems: 'center' },
-  bar: { width: '70%', borderRadius: 5, backgroundColor: ACCENT, alignItems: 'center', justifyContent: 'center' },
-  barLabelAbove: { position: 'absolute', top: -15, color: '#c7c7cc', fontSize: 8.5, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
-  barLabelInside: { color: '#fff', fontSize: 8, fontWeight: '600', textAlign: 'center', writingDirection: 'rtl', transform: [{ rotate: '-90deg' }] },
-  barDate: { color: FAINT, fontSize: 8, marginTop: 6, textAlign: 'center', writingDirection: 'rtl' },
+  bar: { width: '70%', borderRadius: 5, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  barLabelAbove: { position: 'absolute', top: -15, color: colors.textDim, fontSize: 8.5, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
+  barLabelInside: { color: colors.white, fontSize: 8, fontWeight: '600', textAlign: 'center', writingDirection: 'rtl', transform: [{ rotate: '-90deg' }] },
+  barDate: { color: colors.textFaint, fontSize: 8, marginTop: 6, textAlign: 'center', writingDirection: 'rtl' },
 
   legendRow: { flexDirection: 'row', gap: 14, marginBottom: 14 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 9, height: 9, borderRadius: 2 },
-  legendText: { color: MUTED, fontSize: 10.5, textAlign: 'right', writingDirection: 'rtl' },
+  legendText: { color: colors.textDim, fontSize: 10.5, writingDirection: 'rtl' },
 
-  restWorkRow: { gap: 6, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: BORDER },
-  restWorkDate: { color: TEXT, fontSize: 12.5, fontWeight: '700', textAlign: 'right', writingDirection: 'rtl' },
-  restWorkDuration: { color: MUTED, fontSize: 12.5, textAlign: 'right', writingDirection: 'rtl' },
+  restWorkRow: { gap: 6, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.line },
+  restWorkDate: { color: colors.text, fontSize: 12.5, fontWeight: '700', writingDirection: 'rtl' },
+  restWorkDuration: { color: colors.textDim, fontSize: 12.5, writingDirection: 'rtl' },
   stackedBar: { flexDirection: 'row', width: '100%', height: 10, borderRadius: 5, overflow: 'hidden' },
-  restWorkSubLabel: { color: FAINT, fontSize: 10.5, textAlign: 'right', writingDirection: 'rtl' },
+  restWorkSubLabel: { color: colors.textFaint, fontSize: 10.5, writingDirection: 'rtl' },
 
-  showMoreButton: { marginTop: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: BORDER, alignItems: 'center' },
-  showMoreText: { color: '#c7c7cc', fontSize: 12.5, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
-  moreNote: { color: FAINT, fontSize: 11, marginTop: 10, textAlign: 'left', writingDirection: 'rtl' },
+  showMoreButton: { marginTop: 12, minHeight: touch.min, justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: colors.line, alignItems: 'center' },
+  showMoreText: { color: colors.textDim, fontSize: 12.5, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
+  moreNote: { color: colors.textFaint, fontSize: 11, marginTop: 10, writingDirection: 'rtl' },
 });

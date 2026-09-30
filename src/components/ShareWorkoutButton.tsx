@@ -5,13 +5,12 @@ import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { ShareCard, ShareCardData } from './ShareCard';
+import { colors, common, spacing } from '../theme';
 
 interface ShareWorkoutButtonProps {
   data: ShareCardData;
   appName?: string;
 }
-
-const AMBER = '#ffb454';
 
 export function ShareWorkoutButton({ data, appName }: ShareWorkoutButtonProps) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -65,9 +64,9 @@ export function ShareWorkoutButton({ data, appName }: ShareWorkoutButtonProps) {
 
   return (
     <>
-      <TouchableOpacity style={styles.shareButton} onPress={openPreview} activeOpacity={0.85}>
-        <Ionicons name="share-social" size={18} color="#241704" />
-        <Text style={styles.shareButtonText}>שתף אימון</Text>
+      <TouchableOpacity style={[common.primaryButton, styles.row, styles.fullWidth]} onPress={openPreview} activeOpacity={0.85}>
+        <Ionicons name="share-social" size={18} color={colors.onAccent} />
+        <Text style={common.primaryButtonText}>שתף אימון</Text>
       </TouchableOpacity>
 
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closePreview}>
@@ -77,16 +76,16 @@ export function ShareWorkoutButton({ data, appName }: ShareWorkoutButtonProps) {
           </View>
 
           <View style={styles.actionsRow}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={closePreview} disabled={sharing}>
-              <Text style={styles.cancelBtnText}>ביטול</Text>
+            <TouchableOpacity style={[common.secondaryButton, styles.actionBtn]} onPress={closePreview} disabled={sharing}>
+              <Text style={common.secondaryButtonText}>ביטול</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.confirmBtn} onPress={handleShare} disabled={sharing}>
+            <TouchableOpacity style={[common.primaryButton, styles.row, styles.actionBtn]} onPress={handleShare} disabled={sharing}>
               {sharing ? (
-                <ActivityIndicator color="#241704" />
+                <ActivityIndicator color={colors.onAccent} />
               ) : (
                 <>
-                  <Ionicons name="share-social" size={16} color="#241704" />
-                  <Text style={styles.confirmBtnText}>שתף</Text>
+                  <Ionicons name="share-social" size={16} color={colors.onAccent} />
+                  <Text style={common.primaryButtonText}>שתף</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -98,22 +97,11 @@ export function ShareWorkoutButton({ data, appName }: ShareWorkoutButtonProps) {
 }
 
 const styles = StyleSheet.create({
-  shareButton: {
-    width: '100%', backgroundColor: AMBER, borderRadius: 14, paddingVertical: 14,
-    flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8,
-  },
-  shareButtonText: { fontSize: 15, fontWeight: '500', color: '#241704' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
+  fullWidth: { width: '100%' },
+  // flexDirection 'row' כבר מסדר מימין לשמאל כי האפליקציה רצה ב-RTL כפוי
+  row: { flexDirection: 'row', gap: spacing.sm },
+  overlay: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center' },
   previewWrap: { borderRadius: 22, overflow: 'hidden' },
   actionsRow: { flexDirection: 'row', gap: 10, marginTop: 18, width: 270 },
-  cancelBtn: {
-    flex: 1, backgroundColor: 'transparent', borderWidth: 1, borderColor: '#3a3a3a',
-    borderRadius: 12, paddingVertical: 12, alignItems: 'center',
-  },
-  cancelBtnText: { color: '#cfcfcf', fontSize: 14 },
-  confirmBtn: {
-    flex: 1, backgroundColor: AMBER, borderRadius: 12, paddingVertical: 12,
-    flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6,
-  },
-  confirmBtnText: { color: '#241704', fontSize: 14, fontWeight: '500' },
+  actionBtn: { flex: 1 },
 });

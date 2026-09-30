@@ -3,7 +3,9 @@ import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { colors, fontSize, iconSize, spacing, touch } from './src/theme';
 import WorkoutTrackerScreen from './src/screens/WorkoutTrackerScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
@@ -14,31 +16,39 @@ import { syncPendingWorkoutsToCloud } from './src/lib/workoutService';
 
 const Tab = createBottomTabNavigator();
 
-// ערכת נושא כהה שתואמת לצבעים ששימשו במסכים עצמם (0f0f10 / 17181c)
+// ערכת נושא של הניווט - כל הצבעים מגיעים מ-src/theme/colors.ts
 const AppTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: '#0f0f10',
-    card: '#17181c',
-    border: '#2c2c2e',
-    primary: '#ffb454',
-    text: '#f1f0ec',
+    background: colors.bg,
+    card: colors.surface,
+    border: colors.line,
+    primary: colors.accent,
+    text: colors.text,
   },
 };
 
 function AppTabs() {
+  // גובה הסרגל כולל את האזור הבטוח של המכשיר (סרגל הניווט/הבית של הטלפון)
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#ffb454',
-        tabBarInactiveTintColor: '#64666f',
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textFaint,
         tabBarStyle: {
-          backgroundColor: '#17181c',
-          borderTopColor: '#2c2c2e',
+          backgroundColor: colors.surface,
+          borderTopColor: colors.line,
+          height: touch.tabBar + insets.bottom,
+          paddingTop: spacing.sm,
+          paddingBottom: insets.bottom + spacing.xs,
         },
-        tabBarIcon: ({ color, size }) => {
+        tabBarLabelStyle: { fontSize: fontSize.sm, fontWeight: '600' },
+        tabBarItemStyle: { minHeight: touch.min },
+        tabBarIcon: ({ color }) => {
           const iconName =
             route.name === 'אימון'
               ? 'barbell'
@@ -47,7 +57,7 @@ function AppTabs() {
               : route.name === 'ניתוח'
               ? 'stats-chart'
               : 'person-circle';
-          return <Ionicons name={iconName as any} size={size} color={color} />;
+          return <Ionicons name={iconName as any} size={iconSize.tab} color={color} />;
         },
       })}
     >
@@ -75,8 +85,8 @@ function Root() {
 
   if (initializing) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0f0f10', alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color="#ffb454" size="large" />
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.accent} size="large" />
       </View>
     );
   }
@@ -86,10 +96,12 @@ function Root() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <NavigationContainer theme={AppTheme}>
-        <Root />
-      </NavigationContainer>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <NavigationContainer theme={AppTheme}>
+          <Root />
+        </NavigationContainer>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
