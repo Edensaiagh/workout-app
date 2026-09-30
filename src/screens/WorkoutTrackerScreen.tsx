@@ -14,10 +14,12 @@ import { haptics } from '../lib/haptics';
 import { useAuth } from '../lib/authContext';
 import ExerciseNamePicker from '../components/ExerciseNamePicker';
 import { WorkoutCompleteView } from '../components/WorkoutCompleteView';
+import { StepperField } from '../components/StepperField';
+import type { BrokenRecord } from '../lib/personalRecords';
 import { Workout } from '../types/workout';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, common, fontSize, iconSize, radius, spacing, touch, Text, TextInput } from '../theme';
+import { colors, common, fontSize, iconSize, radius, spacing, touch, Text } from '../theme';
 
 function fmt(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -63,7 +65,7 @@ export default function WorkoutTrackerScreen() {
   // כל עוד לא סוגרים את האפליקציה לגמרי.
   const [completedWorkout, setCompletedWorkout] = useState<Workout | null>(null);
   const [completedSavedTo, setCompletedSavedTo] = useState<'cloud' | 'local'>('cloud');
-  const [completedNewPRsCount, setCompletedNewPRsCount] = useState(0);
+  const [completedNewRecords, setCompletedNewRecords] = useState<BrokenRecord[]>([]);
 
   const lastBeepedSecond = useRef<number | null>(null);
 
@@ -208,7 +210,7 @@ export default function WorkoutTrackerScreen() {
       haptics.success();
       setCompletedWorkout(completed);
       setCompletedSavedTo(result.savedTo);
-      setCompletedNewPRsCount(result.newPRsCount);
+      setCompletedNewRecords(result.newRecords);
     } finally {
       setSaving(false);
     }
@@ -242,7 +244,8 @@ export default function WorkoutTrackerScreen() {
         workout={completedWorkout}
         savedTo={completedSavedTo}
         userId={userId}
-        newPRsCount={completedNewPRsCount}
+        newPRsCount={completedNewRecords.length}
+        newRecords={completedNewRecords}
         onStartNew={handleStartNew}
         appName="שם האפליקציה" // TODO: להחליף לשם האמיתי
       />
@@ -430,33 +433,32 @@ export default function WorkoutTrackerScreen() {
         {/* הוספת סט */}
         <View style={styles.addSetForm}>
           <View style={styles.fieldRow}>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>משקל (ק״ג)</Text>
-              <TextInput
-                style={[styles.fieldInput, styles.fieldInputWeight]}
-                placeholder="0"
-                placeholderTextColor={colors.textFaint}
-                keyboardType="decimal-pad"
-                value={weightText}
-                onChangeText={setWeightText}
-              />
-            </View>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>חזרות</Text>
-              <TextInput
-                style={[styles.fieldInput, styles.fieldInputReps]}
-                placeholder="0"
-                placeholderTextColor={colors.textFaint}
-                keyboardType="number-pad"
-                value={repsText}
-                onChangeText={setRepsText}
-              />
-            </View>
+            <StepperField
+              label="משקל (ק״ג)"
+              value={weightText}
+              onChangeText={setWeightText}
+              step={2.5}
+              decimals={2}
+              keyboardType="decimal-pad"
+              borderColor={colors.info}
+              minusLabel="הורדת משקל"
+              plusLabel="הוספת משקל"
+            />
+            <StepperField
+              label="חזרות"
+              value={repsText}
+              onChangeText={setRepsText}
+              step={1}
+              keyboardType="number-pad"
+              borderColor={colors.teal}
+              minusLabel="הורדת חזרה"
+              plusLabel="הוספת חזרה"
+            />
           </View>
           <Text style={styles.fieldHint}>
             {rest.isActive
               ? 'אפשר להוסיף סט חדש רק לאחר סיום המנוחה'
-              : 'המשקל נשמר מהסט הקודם — אפשר לשנות'}
+              : 'הערכים נשמרים מהסט הקודם. לחיצה ארוכה על + או − משנה מהר, ולחיצה על המספר פותחת מקלדת.'}
           </Text>
           {setError && <Text style={styles.errorText}>{setError}</Text>}
           <TouchableOpacity
@@ -558,16 +560,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 18,
   },
-  clockGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  clockGroup: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   clockDot: {
-    width: 7,
-    height: 7,
+    width: 8,
+    height: 8,
     borderRadius: 4,
     backgroundColor: colors.danger,
   },
-  timerLabel: { color: colors.textDim, fontSize: fontSize.xs, fontWeight: '600' },
-  timer: { fontSize: fontSize.md, color: colors.text, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  timerLabel: { color: colors.textDim, fontSize: 20, fontWeight: '600' },
+  timer: { fontSize: 20, color: colors.text, fontWeight: '700', fontVariant: ['tabular-nums'] },
   finishButton: { width: '100%', marginBottom: spacing.xl },
 
   exerciseCard: {
@@ -654,23 +656,8 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: spacing.sm,
   },
-  fieldRow: { flexDirection: 'row', gap: 10, marginBottom: spacing.sm },
-  fieldGroup: { flex: 1 },
-  fieldLabel: { color: colors.textDim, fontSize: 12, fontWeight: '600', marginBottom: 6, textAlign: 'center' },
-  fieldInput: {
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.line,
-    borderRadius: radius.md,
-    minHeight: touch.button,
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  fieldInputWeight: { borderColor: colors.info },
-  fieldInputReps: { borderColor: colors.teal },
-  fieldHint: { color: colors.textDim, fontSize: 11, textAlign: 'center', marginBottom: 10 },
+  fieldRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  fieldHint: { color: colors.textDim, fontSize: 12, textAlign: 'center', marginBottom: 10 },
   errorText: { color: colors.danger, fontSize: 12, textAlign: 'center', marginBottom: spacing.sm },
 
   restOverlay: {

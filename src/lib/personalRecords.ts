@@ -24,6 +24,21 @@ export interface ExerciseRecord {
 
 export type PersonalRecordsMap = Record<string, ExerciseRecord>;
 
+/** שיא בודד שנשבר באימון - להצגה במסך "אימון הושלם" */
+export interface BrokenRecord {
+  exercise: string;
+  kind: 'weight' | 'reps' | 'volume';
+  value: number; // הערך החדש (ק"ג / חזרות / נפח בק"ג)
+  delta: number | null; // כמה עלה על השיא הקודם; null = זה השיא הראשון בתרגיל
+}
+
+export interface PersonalRecordsUpdate {
+  count: number; // כמה שיאים נשברו (ברמת שדה בודד, לא ברמת תרגיל)
+  records: BrokenRecord[];
+}
+
+const NO_RECORDS: PersonalRecordsUpdate = { count: 0, records: [] };
+
 const LIBRARY_EXERCISES_SET = new Set(EXERCISE_NAMES);
 
 function emptyRecord(): Omit<ExerciseRecord, 'updatedAt'> {
@@ -79,17 +94,17 @@ function recordsFromWorkout(workout: Workout): Record<string, Omit<ExerciseRecor
  * קורא את השיאים הקיימים, משווה מול הנתונים מהאימון הזה, ושומר רק את המקסימום
  * בכל שדה. כותב ל-Firestore רק אם בפועל נשבר שיא כלשהו (אחרת לא נוגע במסמך).
  *
- * מחזיר את מספר השיאים שנשברו (ברמת שדה בודד - משקל/חזרות/נפח, לא ברמת תרגיל),
- * כדי שאפשר יהיה להציג "X שיאים חדשים" מיד אחרי סיום האימון.
+ * מחזיר את מספר השיאים שנשברו (ברמת שדה בודד - משקל/חזרות/נפח, לא ברמת תרגיל)
+ * ואת פירוט השיאים, כדי שאפשר יהיה להציג "X שיאים חדשים" מיד אחרי סיום האימון.
  */
-export async function updatePersonalRecordsForWorkout(userId: string, workout: Workout): Promise<number> {
+export async function updatePersonalRecordsForWorkout(userId: string, workout: Workout): Promise<PersonalRecordsUpdate> {
   const fromWorkout = recordsFromWorkout(workout);
   const exerciseNames = Object.keys(fromWorkout);
-  if (exerciseNames.length === 0) return 0;
+  if (exerciseNames.length === 0) return NO_RECORDS;
 
   const existing = await getPersonalRecords(userId);
   const merged: PersonalRecordsMap = { ...existing };
-  let brokenCount = 0;
+  const brokenRecords: BrokenRecord[] = [];
   const now = Date.now();
 
   exerciseNames.forEach((name) => {
@@ -102,7 +117,16 @@ export async function updatePersonalRecordsForWorkout(userId: string, workout: W
 
     if (!weightBroken && !repsBroken && !volumeBroken) return;
 
-    brokenCount += [weightBroken, repsBroken, volumeBroken].filter(Boolean).length;
+    const deltaOf = (next: number, before: number) => (before > 0 ? next - before : null);
+    if (weightBroken) {
+      brokenRecords.push({ exercise: name, kind: 'weight', value: incoming.maxWeight, delta: deltaOf(incoming.maxWeight, prev.maxWeight) });
+    }
+    if (volumeBroken) {
+      brokenRecords.push({ exercise: name, kind: 'volume', value: incoming.maxSessionVolume, delta: deltaOf(incoming.maxSessionVolume, prev.maxSessionVolume) });
+    }
+    if (repsBroken) {
+      brokenRecords.push({ exercise: name, kind: 'reps', value: incoming.maxReps, delta: deltaOf(incoming.maxReps, prev.maxReps) });
+    }
 
     merged[name] = {
       maxWeight: Math.max(prev.maxWeight, incoming.maxWeight),
@@ -112,10 +136,10 @@ export async function updatePersonalRecordsForWorkout(userId: string, workout: W
     };
   });
 
-  if (brokenCount === 0) return 0; // שום שיא לא נשבר - לא כותבים מסמך מיותר
+  if (brokenRecords.length === 0) return NO_RECORDS; // שום שיא לא נשבר - לא כותבים מסמך מיותר
 
   await setDoc(doc(db, PERSONAL_RECORDS_COLLECTION, userId), merged);
-  return brokenCount;
+  return { count: brokenRecords.length, records: brokenRecords };
 }
 
 /**

@@ -10,15 +10,15 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { saveWorkoutLocally, syncPendingWorkouts, removePendingWorkout } from './localBackup';
-import { updatePersonalRecordsForWorkout } from './personalRecords';
+import { updatePersonalRecordsForWorkout, BrokenRecord, PersonalRecordsUpdate } from './personalRecords';
 import { Workout } from '../types/workout';
 
 const WORKOUTS_COLLECTION = 'workouts';
 
 // שומרת את האימון עצמו, ואז מעדכנת שיאים אישיים על בסיסו.
-// מחזירה כמה שיאים נשברו - שימושי מיד אחרי saveWorkout, כדי להציג "X שיאים חדשים"
+// מחזירה כמה שיאים נשברו ואילו - שימושי מיד אחרי saveWorkout, כדי להציג "X שיאים חדשים"
 // במסך "אימון הושלם" ובכרטיס השיתוף, בלי לקרוא שוב את הנתונים.
-async function pushWorkoutToCloud(workout: Workout): Promise<number> {
+async function pushWorkoutToCloud(workout: Workout): Promise<PersonalRecordsUpdate> {
   const ref = doc(db, WORKOUTS_COLLECTION, workout.id);
   await setDoc(ref, workout);
 
@@ -27,21 +27,21 @@ async function pushWorkoutToCloud(workout: Workout): Promise<number> {
   } catch {
     // עדכון השיאים נכשל - אבל האימון עצמו כבר נשמר בהצלחה, אז לא הופכים
     // את זה לכישלון של השמירה כולה. פשוט הפעם בלי עדכון שיאים.
-    return 0;
+    return { count: 0, records: [] };
   }
 }
 
 export async function saveWorkout(
   workout: Workout
-): Promise<{ savedTo: 'cloud' | 'local'; newPRsCount: number }> {
+): Promise<{ savedTo: 'cloud' | 'local'; newPRsCount: number; newRecords: BrokenRecord[] }> {
   try {
-    const newPRsCount = await pushWorkoutToCloud(workout);
-    return { savedTo: 'cloud', newPRsCount };
+    const update = await pushWorkoutToCloud(workout);
+    return { savedTo: 'cloud', newPRsCount: update.count, newRecords: update.records };
   } catch {
     await saveWorkoutLocally(workout);
     // האימון נשמר רק מקומית - השיאים יתעדכנו בפעם הבאה שהוא יסתנכרן לענן
     // (syncPendingWorkoutsToCloud, למטה), לא עכשיו.
-    return { savedTo: 'local', newPRsCount: 0 };
+    return { savedTo: 'local', newPRsCount: 0, newRecords: [] };
   }
 }
 

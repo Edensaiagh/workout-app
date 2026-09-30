@@ -16,6 +16,8 @@ function fire(run: () => Promise<void>) {
 export const haptics = {
   /** נגיעה קלה - הוספת סט, מעבר בין תרגילים */
   tap: () => fire(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
+  /** בחירה - לחיצה על + / − בטופס הסט */
+  select: () => fire(() => Haptics.selectionAsync()),
   /** הצלחה - סיום מנוחה, סיום אימון, שיא חדש */
   success: () => fire(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),
   /** אזהרה - פעולה שנחסמה */
