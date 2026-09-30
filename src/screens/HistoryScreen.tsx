@@ -19,7 +19,8 @@ import { EmptyState } from '../components/EmptyState';
 import { fontSize, iconSize, radius, spacing, touch, Text, useTheme } from '../theme';
 import type { Palette } from '../theme';
 
-const PR_COLLAPSED_COUNT = 4;
+const PR_COLLAPSED_COUNT = 3;
+const CHIPS_PER_CARD = 3;
 
 // ---------------------------------------------------------------
 // עזרי חישוב - מבוססים על הטיפוסים האמיתיים מ-types/workout.ts:
@@ -60,7 +61,11 @@ function formatHebrewDate(timestampMs: number) {
     'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
     'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר',
   ];
+  const monthShort = ['ינו׳', 'פבר׳', 'מרץ', 'אפר׳', 'מאי', 'יונ׳', 'יול׳', 'אוג׳', 'ספט׳', 'אוק׳', 'נוב׳', 'דצמ׳'];
   return {
+    dayNumber: d.getDate(),
+    monthShort: monthShort[d.getMonth()],
+    dayName: days[d.getDay()],
     dateLabel: `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`,
     timeLabel: d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
     monthLabel: `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
@@ -235,13 +240,8 @@ export default function HistoryScreen() {
 
         <View style={styles.prCard}>
           <View style={styles.prCardHead}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.prTitleRow}>
-                <Ionicons name="trophy" size={iconSize.sm} color={colors.accentText} />
-                <Text style={styles.prTitle}>השיאים האישיים שלי</Text>
-              </View>
-              <Text style={styles.prSubtitle}>רק תרגילים מהרשימה הקבועה נספרים כאן</Text>
-            </View>
+            <Ionicons name="trophy-outline" size={iconSize.sm} color={colors.accentText} />
+            <Text style={styles.prTitle}>השיאים שלי</Text>
             {prExerciseNames.length > 0 && (
               <TouchableOpacity style={styles.manageLink} onPress={openManage}>
                 <Text style={styles.manageLinkText}>ניהול</Text>
@@ -260,19 +260,11 @@ export default function HistoryScreen() {
                 return (
                   <View key={name} style={[styles.prRow, i === 0 && styles.prRowFirst]}>
                     <Text style={styles.prExerciseName}>{name}</Text>
-                    <View style={styles.prValsRow}>
-                      <View style={styles.prVal}>
-                        <Text style={styles.prValNum}>{r.maxWeight.toLocaleString('he-IL')}</Text>
-                        <Text style={styles.prValLabel}>ק"ג</Text>
-                      </View>
-                      <View style={styles.prVal}>
-                        <Text style={styles.prValNum}>{r.maxReps}</Text>
-                        <Text style={styles.prValLabel}>חזרות</Text>
-                      </View>
-                      <View style={styles.prVal}>
-                        <Text style={styles.prValNum}>{r.maxSessionVolume.toLocaleString('he-IL')}</Text>
-                        <Text style={styles.prValLabel}>נפח/אימון</Text>
-                      </View>
+                    <View style={styles.prValues}>
+                      <Text style={styles.prValNum}>{r.maxWeight.toLocaleString('he-IL')} ק״ג</Text>
+                      <Text style={styles.prValSub}>
+                        {r.maxReps} חזרות · נפח {r.maxSessionVolume.toLocaleString('he-IL')}
+                      </Text>
                     </View>
                   </View>
                 );
@@ -317,12 +309,19 @@ export default function HistoryScreen() {
           <ScrollView contentContainerStyle={styles.list}>
             {grouped.map((group) => (
               <View key={group.monthLabel}>
-                <Text style={styles.monthLabel}>{group.monthLabel}</Text>
+                <View style={styles.monthRow}>
+                  <Text style={styles.monthLabel}>{group.monthLabel}</Text>
+                  <Text style={styles.monthCount}>
+                    {group.items.length === 1 ? 'אימון אחד' : `${group.items.length} אימונים`}
+                  </Text>
+                </View>
                 {group.items.map((workout) => {
-                  const { dateLabel, timeLabel } = formatHebrewDate(workout.startedAt);
+                  const { dayNumber, monthShort, dayName, timeLabel } = formatHebrewDate(workout.startedAt);
                   const durationMinutes = calcDurationMinutes(workout);
                   const volume = calcVolume(workout);
                   const setCount = calcSetCount(workout);
+                  const chipNames = workout.exercises.slice(0, CHIPS_PER_CARD);
+                  const extraCount = workout.exercises.length - chipNames.length;
                   return (
                     <TouchableOpacity
                       key={workout.id}
@@ -330,36 +329,44 @@ export default function HistoryScreen() {
                       activeOpacity={0.85}
                       onPress={() => openDetail(workout)}
                     >
-                      <View style={styles.cardTop}>
-                        <View>
-                          <Text style={styles.cardDate}>{dateLabel}</Text>
-                          <Text style={styles.cardDay}>{timeLabel}</Text>
+                      <View style={styles.dateFrame}>
+                        <Text style={styles.dateDay}>{dayNumber}</Text>
+                        <Text style={styles.dateMonth}>{monthShort}</Text>
+                        <View style={styles.dateDivider} />
+                        <Text style={styles.dateWeekday}>{dayName}</Text>
+                        <Text style={styles.dateTime}>{timeLabel}</Text>
+                      </View>
+                      <View style={styles.cardBody}>
+                        <View style={styles.chipsRow}>
+                          {chipNames.map((e) => (
+                            <View key={e.id} style={styles.chip}>
+                              <Text style={styles.chipText} numberOfLines={1}>
+                                {e.name}
+                              </Text>
+                            </View>
+                          ))}
+                          {extraCount > 0 && <Text style={styles.chipExtra}>+{extraCount}</Text>}
                         </View>
-                        {durationMinutes !== null && (
-                          <View style={styles.durationBadge}>
-                            <Text style={styles.durationText}>{durationMinutes} דק'</Text>
+                        <View style={styles.cardBottom}>
+                          <View style={styles.metrics}>
+                            <View style={styles.metric}>
+                              <View style={[styles.dot, { backgroundColor: colors.accent }]} />
+                              <Text style={styles.metricText}>
+                                <Text style={styles.metricNum}>{volume.toLocaleString('he-IL')}</Text> ק"ג נפח
+                              </Text>
+                            </View>
+                            <View style={styles.metric}>
+                              <View style={[styles.dot, { backgroundColor: colors.teal }]} />
+                              <Text style={styles.metricText}>
+                                <Text style={styles.metricNum}>{setCount}</Text> סטים
+                              </Text>
+                            </View>
                           </View>
-                        )}
-                      </View>
-                      <Text style={styles.cardExercisesTitle}>
-                        <Text style={styles.bold}>{workout.exercises.length} תרגילים</Text>
-                      </Text>
-                      <View style={styles.exerciseBullets}>
-                        {workout.exercises.map((e) => (
-                          <Text key={e.id} style={styles.exerciseBulletText}>
-                            {'• '}
-                            {e.name}
-                          </Text>
-                        ))}
-                      </View>
-                      <View style={styles.cardBottom}>
-                        <View style={styles.metric}>
-                          <View style={[styles.dot, { backgroundColor: colors.accent }]} />
-                          <Text style={styles.metricText}>{volume.toLocaleString()} ק"ג נפח</Text>
-                        </View>
-                        <View style={styles.metric}>
-                          <View style={[styles.dot, { backgroundColor: colors.teal }]} />
-                          <Text style={styles.metricText}>{setCount} סטים</Text>
+                          {durationMinutes !== null && (
+                            <View style={styles.durationBadge}>
+                              <Text style={styles.durationText}>{durationMinutes} דק'</Text>
+                            </View>
+                          )}
                         </View>
                       </View>
                     </TouchableOpacity>
@@ -520,65 +527,99 @@ const createStyles = (colors: Palette) => StyleSheet.create({
     marginBottom: 12,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.line,
+    borderColor: colors.accentBadgeBorder,
     borderRadius: 18,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  prTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  prTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
-  prSubtitle: { fontSize: 12, color: colors.textFaint, marginTop: 2, marginBottom: 12 },
+  prCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 6 },
+  prTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
   prEmptyText: { fontSize: 12.5, color: colors.textFaint, textAlign: 'center', lineHeight: 18, paddingVertical: 4 },
   prRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    gap: 12,
+    paddingVertical: 11,
     borderTopWidth: 1,
     borderTopColor: colors.line,
   },
-  prRowFirst: { borderTopWidth: 0, paddingTop: 0 },
-  prExerciseName: { fontSize: 13.5, fontWeight: '600', color: colors.text },
-  prValsRow: { flexDirection: 'row', gap: 14 },
-  prVal: { alignItems: 'center', minWidth: 40 },
-  prValNum: { fontSize: 13, fontWeight: '700', color: colors.accentText },
-  prValLabel: { fontSize: 11, color: colors.textFaint, marginTop: 1 },
-  // אותו סגנון "הצג עוד" שכבר קיים ב-AnalysisScreen.tsx - מסגרת בלבד, בלי מילוי
-  showMoreButton: { marginTop: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.line, alignItems: 'center' },
-  showMoreText: { color: colors.textDim, fontSize: 12.5, fontWeight: '700', textAlign: 'center' },
-  monthLabel: { fontSize: 13, fontWeight: '700', color: colors.textFaint, paddingVertical: 10 },
+  prRowFirst: { borderTopWidth: 0 },
+  prExerciseName: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  prValues: { alignItems: 'flex-end', gap: 2 },
+  prValNum: { fontSize: 17, fontWeight: '800', color: colors.accentText, fontVariant: ['tabular-nums'] },
+  prValSub: { fontSize: 12, color: colors.textDim },
+  showMoreButton: {
+    marginTop: 4,
+    minHeight: touch.min,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  showMoreText: { color: colors.accentText, fontSize: 14, fontWeight: '700', textAlign: 'center' },
+
+  monthRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingVertical: 10 },
+  monthLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
+  monthCount: { fontSize: 12, color: colors.textDim },
+
+  // ---- כרטיס אימון: מסגרת תאריך אנכית בצד, ותוכן לידה ----
   card: {
+    flexDirection: 'row',
+    gap: 12,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: 18,
-    padding: 16,
+    padding: 12,
     marginBottom: 10,
   },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardDate: { fontSize: 15, fontWeight: '700', color: colors.text },
-  cardDay: { fontSize: 12, color: colors.textFaint, marginTop: 2 },
-  durationBadge: { backgroundColor: colors.surfaceHigh, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  durationText: { fontSize: 13, color: colors.textDim, fontWeight: '600' },
-  cardExercisesTitle: {
-    fontSize: 13,
-    color: colors.textDim,
-    marginTop: 12,
-    alignSelf: 'flex-start',
+  dateFrame: {
+    width: 84,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.md + 2,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
   },
-  exerciseBullets: { marginTop: 6, alignItems: 'flex-start' },
-  exerciseBulletText: { fontSize: 13, color: colors.textDim, alignSelf: 'flex-start', lineHeight: 19 },
-  bold: { color: colors.text, fontWeight: '600' },
+  dateDay: { fontSize: 28, fontWeight: '800', color: colors.text, lineHeight: 32, fontVariant: ['tabular-nums'] },
+  dateMonth: { fontSize: 12, color: colors.textDim },
+  dateDivider: { width: 28, height: 1, backgroundColor: colors.line, marginVertical: 8 },
+  dateWeekday: { fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  dateTime: { fontSize: 13, color: colors.textDim, fontVariant: ['tabular-nums'] },
+  cardBody: { flex: 1, minWidth: 0, justifyContent: 'space-between', gap: 12 },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignContent: 'flex-start' },
+  chip: { backgroundColor: colors.surfaceHigh, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, maxWidth: '100%' },
+  chipText: { fontSize: 12, fontWeight: '600', color: colors.text },
+  chipExtra: { fontSize: 12, fontWeight: '600', color: colors.textDim, paddingVertical: 5, paddingHorizontal: 4 },
   cardBottom: {
     flexDirection: 'row',
-    gap: 16,
-    marginTop: 12,
-    paddingTop: 12,
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: colors.line,
   },
+  metrics: { gap: 6 },
   metric: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  metricText: { fontSize: 12.5, color: colors.textDim, fontWeight: '600' },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  metricText: { fontSize: 13, color: colors.textDim },
+  metricNum: { color: colors.text, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  durationBadge: {
+    backgroundColor: colors.accentSoft,
+    borderWidth: 1,
+    borderColor: colors.accentBadgeBorder,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  durationText: { fontSize: 13, fontWeight: '700', color: colors.accentText, fontVariant: ['tabular-nums'] },
+  bold: { color: colors.text, fontWeight: '600' },
 
   detailScreen: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg },
   detailHeader: {
@@ -618,15 +659,17 @@ const createStyles = (colors: Palette) => StyleSheet.create({
   setNumText: { fontSize: 12, fontWeight: '700', color: colors.textFaint },
   setDetail: { fontSize: 13.5, color: colors.textDim },
 
-  // ---- כרטיס השיאים: כותרת + כפתור ניהול ----
-  prCardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  // ---- כפתור ניהול בכרטיס השיאים ----
   manageLink: {
-    backgroundColor: colors.accentSoft,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    minHeight: 36,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  manageLinkText: { color: colors.accentText, fontSize: 12, fontWeight: '700' },
+  manageLinkText: { color: colors.textDim, fontSize: 13, fontWeight: '600' },
 
   // ---- מסך ניהול שיאים (אותו דפוס בדיוק כמו detailScreen/detailHeader) ----
   manageHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 48, paddingBottom: 6 },
