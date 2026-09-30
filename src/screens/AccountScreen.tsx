@@ -9,7 +9,7 @@ export default function AccountScreen() {
   const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOut = () => {
-    Alert.alert('להתנתק?', 'תצטרכי להתחבר שוב כדי לראות את האימונים שלך.', [
+    Alert.alert('להתנתק?', 'תצטרך להתחבר שוב כדי לראות את האימונים שלך.', [
       { text: 'ביטול', style: 'cancel' },
       {
         text: 'התנתקות',

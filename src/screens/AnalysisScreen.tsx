@@ -108,7 +108,7 @@ export default function AnalysisScreen() {
           if (!cancelled) setWorkouts(data.filter((w) => w.status === 'completed'));
         })
         .catch(() => {
-          if (!cancelled) setError('לא הצלחנו לטעון את נתוני האימונים. נסי שוב מאוחר יותר.');
+          if (!cancelled) setError('לא הצלחנו לטעון את נתוני האימונים. נסה שוב מאוחר יותר.');
         })
         .finally(() => {
           if (!cancelled) setLoading(false);
@@ -260,7 +260,7 @@ export default function AnalysisScreen() {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.emptyTitle}>אין עדיין נתונים לניתוח</Text>
-        <Text style={styles.emptySubtitle}>סיימי כמה אימונים ותוכלי לראות כאן את ההתקדמות שלך</Text>
+        <Text style={styles.emptySubtitle}>סיים כמה אימונים ותוכל לראות כאן את ההתקדמות שלך</Text>
       </View>
     );
   }

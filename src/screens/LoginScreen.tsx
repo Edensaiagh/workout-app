@@ -68,7 +68,7 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Bizi 365</Text>
         <Text style={styles.subtitle}>
-          {mode === 'signIn' ? 'התחברי כדי להמשיך' : 'צרי חשבון חדש'}
+          {mode === 'signIn' ? 'התחבר כדי להמשיך' : 'צור חשבון חדש'}
         </Text>
 
         <View style={styles.form}>

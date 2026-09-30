@@ -10,13 +10,21 @@ interface WorkoutCompleteViewProps {
   workout: Workout;
   savedTo: 'cloud' | 'local';
   userId: string;
+  newPRsCount: number; // מגיע מ-saveWorkout (ראו workoutService.ts) - כבר מחושב, לא נטען כאן מחדש
   onStartNew: () => void;
   appName?: string;
 }
 
 const AMBER = '#ffb454';
 
-export function WorkoutCompleteView({ workout, savedTo, userId, onStartNew, appName }: WorkoutCompleteViewProps) {
+export function WorkoutCompleteView({
+  workout,
+  savedTo,
+  userId,
+  newPRsCount,
+  onStartNew,
+  appName,
+}: WorkoutCompleteViewProps) {
   const [shareData, setShareData] = useState<ShareCardData | null>(null);
 
   useEffect(() => {
@@ -24,17 +32,17 @@ export function WorkoutCompleteView({ workout, savedTo, userId, onStartNew, appN
     getWorkoutsThisWeekCount(userId)
       .then((count) => {
         if (cancelled) return;
-        setShareData(buildShareCardDataFromWorkout(workout, count));
+        setShareData(buildShareCardDataFromWorkout(workout, count, newPRsCount));
       })
       .catch(() => {
         // אם ספירת "אימונים השבוע" נכשלת, לא חוסמים את כל המסך - מציגים 0
         if (cancelled) return;
-        setShareData(buildShareCardDataFromWorkout(workout, 0));
+        setShareData(buildShareCardDataFromWorkout(workout, 0, newPRsCount));
       });
     return () => {
       cancelled = true;
     };
-  }, [workout.id, userId]);
+  }, [workout.id, userId, newPRsCount]);
 
   const durationMinutes =
     workout.finishedAt != null ? Math.max(0, Math.round((workout.finishedAt - workout.startedAt) / 60000)) : 0;
@@ -58,7 +66,7 @@ export function WorkoutCompleteView({ workout, savedTo, userId, onStartNew, appN
           <Text style={styles.statLabel}>ק"ג נפח</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statValue}>{newPRsCount}</Text>
           <Text style={styles.statLabel}>שיאים חדשים</Text>
         </View>
       </View>
@@ -69,7 +77,9 @@ export function WorkoutCompleteView({ workout, savedTo, userId, onStartNew, appN
           <Text style={styles.cloudBannerText}>האימון נשמר בענן</Text>
         </View>
       )}
-      {/* אם savedTo === 'local', ה-Alert הקיים כבר הוצג ב-doFinish - אין כאן באנר נוסף */}
+      {/* אם savedTo === 'local', ה-Alert הקיים כבר הוצג ב-doFinish - אין כאן באנר נוסף.
+          שימו לב: כשנשמר רק מקומית, newPRsCount תמיד 0 (ראו workoutService.ts) - השיאים
+          יתעדכנו בפעם הבאה שהאימון הזה יסתנכרן לענן, לא עכשיו. */}
 
       {shareData ? (
         <ShareWorkoutButton data={shareData} appName={appName} />

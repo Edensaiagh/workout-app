@@ -36,8 +36,17 @@ export async function getWorkoutsThisWeekCount(userId: string): Promise<number> 
   }).length;
 }
 
-/** ממיר Workout (מהסוג שמחזיר finishWorkout()) ל-ShareCardData. */
-export function buildShareCardDataFromWorkout(workout: Workout, workoutsThisWeek: number): ShareCardData {
+/**
+ * ממיר Workout (מהסוג שמחזיר finishWorkout()) ל-ShareCardData.
+ *
+ * newPRsCount מגיע מבחוץ (מהערך שכבר חושב ב-saveWorkout, ראו workoutService.ts) -
+ * הפונקציה הזו לא מחשבת שיאים בעצמה, כדי לא לקרוא פעמיים לאותם נתונים.
+ */
+export function buildShareCardDataFromWorkout(
+  workout: Workout,
+  workoutsThisWeek: number,
+  newPRsCount: number
+): ShareCardData {
   const exercises: ExerciseVolume[] = workout.exercises.map((ex) => ({
     name: ex.name,
     volumeKg: ex.sets.reduce((sum, s) => sum + s.weight * s.reps, 0),
@@ -53,7 +62,7 @@ export function buildShareCardDataFromWorkout(workout: Workout, workoutsThisWeek
     totalVolumeKg,
     exerciseCount: exercises.length,
     workoutsThisWeek,
-    newPRsCount: 0, // TODO: להזין ערך אמיתי כשזיהוי השיאים האישיים ייבנה
+    newPRsCount,
     topExercises: getTopExercisesByVolume(exercises),
   };
 }

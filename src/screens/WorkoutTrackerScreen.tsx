@@ -62,6 +62,7 @@ export default function WorkoutTrackerScreen() {
   // כל עוד לא סוגרים את האפליקציה לגמרי.
   const [completedWorkout, setCompletedWorkout] = useState<Workout | null>(null);
   const [completedSavedTo, setCompletedSavedTo] = useState<'cloud' | 'local'>('cloud');
+  const [completedNewPRsCount, setCompletedNewPRsCount] = useState(0);
 
   const lastBeepedSecond = useRef<number | null>(null);
 
@@ -202,6 +203,7 @@ export default function WorkoutTrackerScreen() {
       }
       setCompletedWorkout(completed);
       setCompletedSavedTo(result.savedTo);
+      setCompletedNewPRsCount(result.newPRsCount);
     } finally {
       setSaving(false);
     }
@@ -235,6 +237,7 @@ export default function WorkoutTrackerScreen() {
         workout={completedWorkout}
         savedTo={completedSavedTo}
         userId={userId}
+        newPRsCount={completedNewPRsCount}
         onStartNew={handleStartNew}
         appName="שם האפליקציה" // TODO: להחליף לשם האמיתי
       />

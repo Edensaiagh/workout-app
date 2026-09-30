@@ -13,7 +13,10 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Workout } from '../types/workout';
 import { getUserWorkouts, deleteWorkout } from '../lib/workoutService';
+import { getPersonalRecords, deletePersonalRecord, PersonalRecordsMap } from '../lib/personalRecords';
 import { useAuth } from '../lib/authContext';
+
+const PR_COLLAPSED_COUNT = 4;
 
 // ---------------------------------------------------------------
 // עזרי חישוב - מבוססים על הטיפוסים האמיתיים מ-types/workout.ts:
@@ -97,7 +100,13 @@ export default function HistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+
+  const [personalRecords, setPersonalRecords] = useState<PersonalRecordsMap>({});
+  const [prExpanded, setPrExpanded] = useState(false);
+  const [manageVisible, setManageVisible] = useState(false);
+  const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
   const slideAnim = useRef(new Animated.Value(0)).current; // 0 = רשימה, 1 = פירוט
+  const manageSlideAnim = useRef(new Animated.Value(0)).current; // 0 = רשימה, 1 = ניהול שיאים
 
   // רשימת הטאבים נשארת מורכבת (mounted) גם כשעוברים לטאב אחר, אז אם היינו טוענים
   // רק ב-mount, אימון שהסתיים אחרי הביקור הראשון בטאב הזה לא היה מופיע בלי לרענן
@@ -125,7 +134,33 @@ export default function HistoryScreen() {
     }, [userId])
   );
 
+  // שיאים אישיים - נטענים בנפרד מהאימונים עצמם (מסמך אחר, ראו lib/personalRecords.ts).
+  // כישלון כאן לא אמור להפיל את שאר המסך - פשוט לא יוצג כרטיס השיאים הפעם.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      getPersonalRecords(userId)
+        .then((records) => {
+          if (!cancelled) setPersonalRecords(records);
+        })
+        .catch(() => {
+          // לא חוסמים את מסך ההיסטוריה בגלל זה - האימונים עצמם עדיין יוצגו כרגיל
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, [userId])
+  );
+
   const grouped = useMemo(() => groupByMonth(workouts), [workouts]);
+
+  // תרגילים ממוינים לפי העדכון האחרון (מי שיא נשבר לאחרונה מוצג קודם),
+  // כדי ש"הצג עוד" לא יסתיר עדכון טרי מתחת לקיפול.
+  const prExerciseNames = useMemo(
+    () => Object.keys(personalRecords).sort((a, b) => personalRecords[b].updatedAt - personalRecords[a].updatedAt),
+    [personalRecords]
+  );
+  const prVisibleNames = prExpanded ? prExerciseNames : prExerciseNames.slice(0, PR_COLLAPSED_COUNT);
 
   const openDetail = (workout: Workout) => {
     setSelectedWorkout(workout);
@@ -136,6 +171,34 @@ export default function HistoryScreen() {
     Animated.timing(slideAnim, { toValue: 0, duration: 280, useNativeDriver: true }).start(() =>
       setSelectedWorkout(null)
     );
+  };
+
+  const openManage = () => {
+    setManageVisible(true);
+    Animated.timing(manageSlideAnim, { toValue: 1, duration: 320, useNativeDriver: true }).start();
+  };
+
+  const closeManage = () => {
+    Animated.timing(manageSlideAnim, { toValue: 0, duration: 280, useNativeDriver: true }).start(() => {
+      setManageVisible(false);
+      setConfirmDeleteName(null); // לא נשאיר אישור מחיקה פתוח בפעם הבאה שנפתח את המסך
+    });
+  };
+
+  // מחיקה ידנית של שיא בודד - לא קשורה בשום צורה למחיקת אימונים (ראו ההערה
+  // המקבילה ב-deleteWorkout, workoutService.ts). לא מנסה "לנחש" שיא חלופי.
+  const handleDeleteRecord = async (exerciseName: string) => {
+    try {
+      await deletePersonalRecord(userId, exerciseName);
+      setPersonalRecords((prev) => {
+        const next = { ...prev };
+        delete next[exerciseName];
+        return next;
+      });
+      setConfirmDeleteName(null);
+    } catch {
+      Alert.alert('שגיאה', 'לא הצלחנו למחוק את השיא. בדקי את החיבור ונסי שוב.');
+    }
   };
 
   const confirmDeleteWorkout = (workout: Workout) => {
@@ -165,6 +228,7 @@ export default function HistoryScreen() {
   const detailTranslate = slideAnim.interpolate({ inputRange: [0, 1], outputRange: [-400, 0] });
   const listTranslate = slideAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 40] });
   const listOpacity = slideAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.5] });
+  const manageTranslate = manageSlideAnim.interpolate({ inputRange: [0, 1], outputRange: [-400, 0] });
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -174,6 +238,59 @@ export default function HistoryScreen() {
         <View style={styles.topbar}>
           <Text style={styles.h1}>היסטוריה</Text>
           <Text style={styles.subtitle}>כל האימונים שלך במקום אחד</Text>
+        </View>
+
+        <View style={styles.prCard}>
+          <View style={styles.prCardHead}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.prTitle}>🏆 השיאים האישיים שלי</Text>
+              <Text style={styles.prSubtitle}>רק תרגילים מהרשימה הקבועה נספרים כאן</Text>
+            </View>
+            {prExerciseNames.length > 0 && (
+              <TouchableOpacity style={styles.manageLink} onPress={openManage}>
+                <Text style={styles.manageLinkText}>ניהול</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {prExerciseNames.length === 0 ? (
+            <Text style={styles.prEmptyText}>
+              עוד אין שיאים - הם יופיעו כאן אחרי האימון הראשון בתרגיל מהרשימה הקבועה.
+            </Text>
+          ) : (
+            <>
+              {prVisibleNames.map((name, i) => {
+                const r = personalRecords[name];
+                return (
+                  <View key={name} style={[styles.prRow, i === 0 && styles.prRowFirst]}>
+                    <Text style={styles.prExerciseName}>{name}</Text>
+                    <View style={styles.prValsRow}>
+                      <View style={styles.prVal}>
+                        <Text style={styles.prValNum}>{r.maxWeight.toLocaleString('he-IL')}</Text>
+                        <Text style={styles.prValLabel}>ק"ג</Text>
+                      </View>
+                      <View style={styles.prVal}>
+                        <Text style={styles.prValNum}>{r.maxReps}</Text>
+                        <Text style={styles.prValLabel}>חזרות</Text>
+                      </View>
+                      <View style={styles.prVal}>
+                        <Text style={styles.prValNum}>{r.maxSessionVolume.toLocaleString('he-IL')}</Text>
+                        <Text style={styles.prValLabel}>נפח/אימון</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {prExerciseNames.length > PR_COLLAPSED_COUNT && (
+                <TouchableOpacity style={styles.showMoreButton} onPress={() => setPrExpanded((v) => !v)}>
+                  <Text style={styles.showMoreText}>
+                    {prExpanded ? 'הצג פחות' : `הצג עוד (${prExerciseNames.length - PR_COLLAPSED_COUNT})`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
         </View>
 
         {loading && (
@@ -315,6 +432,72 @@ export default function HistoryScreen() {
           </ScrollView>
         </Animated.View>
       )}
+
+      {manageVisible && (
+        <Animated.View style={[styles.detailScreen, { transform: [{ translateX: manageTranslate }] }]}>
+          <View style={styles.manageHeader}>
+            <TouchableOpacity style={styles.backBtn} onPress={closeManage}>
+              <Text style={styles.backArrow}>›</Text>
+              <Text style={styles.backText}>חזרה</Text>
+            </TouchableOpacity>
+            <View>
+              <Text style={styles.manageTitle}>ניהול שיאים</Text>
+              <Text style={styles.manageSub}>מחיקת שיא כאן היא ידנית בלבד - לא קשורה למחיקת אימונים</Text>
+            </View>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.manageList}>
+            {prExerciseNames.length === 0 ? (
+              <Text style={styles.manageEmptyText}>
+                אין עדיין שיאים לנהל.{'\n'}הם יופיעו כאן ברגע שיישבר שיא ראשון.
+              </Text>
+            ) : (
+              prExerciseNames.map((name) => {
+                const r = personalRecords[name];
+                if (confirmDeleteName === name) {
+                  return (
+                    <View key={name} style={styles.confirmInline}>
+                      <Text style={styles.confirmText}>
+                        למחוק את השיא של "{name}"? הפעולה לא ניתנת לביטול - השיא ייקבע מחדש רק באימון הבא שישבור
+                        אותו.
+                      </Text>
+                      <View style={styles.confirmActions}>
+                        <TouchableOpacity
+                          style={[styles.confirmBtn, styles.confirmCancel]}
+                          onPress={() => setConfirmDeleteName(null)}
+                        >
+                          <Text style={styles.confirmCancelText}>ביטול</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.confirmBtn, styles.confirmDeleteBtn]}
+                          onPress={() => handleDeleteRecord(name)}
+                        >
+                          <Text style={styles.confirmDeleteText}>מחיקת שיא</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                }
+                return (
+                  <View key={name} style={styles.manageRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.manageExName}>{name}</Text>
+                      <Text style={styles.manageExVals}>
+                        <Text style={styles.bold}>{r.maxWeight.toLocaleString('he-IL')}</Text> ק"ג{' · '}
+                        <Text style={styles.bold}>{r.maxReps}</Text> חזרות{' · '}
+                        <Text style={styles.bold}>{r.maxSessionVolume.toLocaleString('he-IL')}</Text> נפח/אימון
+                      </Text>
+                    </View>
+                    <TouchableOpacity style={styles.trashBtn} onPress={() => setConfirmDeleteName(name)}>
+                      <Text style={styles.trashText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })
+            )}
+          </ScrollView>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -329,6 +512,35 @@ const styles = StyleSheet.create({
   h1: { fontSize: 28, fontWeight: '800', color: COLORS.text, textAlign: 'center' },
   subtitle: { fontSize: 13, color: COLORS.textDim, marginTop: 2, textAlign: 'center' },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
+  prCard: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: COLORS.hairline,
+    borderRadius: 18,
+    padding: 16,
+  },
+  prTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text, textAlign: 'right' },
+  prSubtitle: { fontSize: 11.5, color: COLORS.textFaint, marginTop: 2, marginBottom: 12, textAlign: 'right' },
+  prEmptyText: { fontSize: 12.5, color: COLORS.textFaint, textAlign: 'center', lineHeight: 18, paddingVertical: 4 },
+  prRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.hairline,
+  },
+  prRowFirst: { borderTopWidth: 0, paddingTop: 0 },
+  prExerciseName: { fontSize: 13.5, fontWeight: '600', color: COLORS.text },
+  prValsRow: { flexDirection: 'row', gap: 14 },
+  prVal: { alignItems: 'center', minWidth: 40 },
+  prValNum: { fontSize: 13, fontWeight: '700', color: COLORS.amber },
+  prValLabel: { fontSize: 9, color: COLORS.textFaint, marginTop: 1 },
+  // אותו סגנון "הצג עוד" שכבר קיים ב-AnalysisScreen.tsx - מסגרת בלבד, בלי מילוי
+  showMoreButton: { marginTop: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: COLORS.hairline, alignItems: 'center' },
+  showMoreText: { color: '#c7c7cc', fontSize: 12.5, fontWeight: '700', textAlign: 'center' },
   monthLabel: { fontSize: 13, fontWeight: '700', color: COLORS.textFaint, paddingVertical: 10, textAlign: 'right' },
   card: {
     backgroundColor: COLORS.panel,
@@ -405,4 +617,63 @@ const styles = StyleSheet.create({
   },
   setNumText: { fontSize: 11.5, fontWeight: '700', color: COLORS.textFaint },
   setDetail: { fontSize: 13.5, color: COLORS.textDim },
+
+  // ---- כרטיס השיאים: כותרת + כפתור ניהול ----
+  prCardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  manageLink: {
+    backgroundColor: 'rgba(255,180,84,0.12)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  manageLinkText: { color: COLORS.amber, fontSize: 12, fontWeight: '700' },
+
+  // ---- מסך ניהול שיאים (אותו דפוס בדיוק כמו detailScreen/detailHeader) ----
+  manageHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6 },
+  manageTitle: { fontSize: 19, fontWeight: '800', color: COLORS.text },
+  manageSub: { fontSize: 12, color: COLORS.textFaint, marginTop: 1, maxWidth: 260 },
+  manageList: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
+  manageEmptyText: { color: COLORS.textFaint, fontSize: 13, textAlign: 'center', lineHeight: 20, paddingTop: 30 },
+
+  manageRow: {
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: COLORS.hairline,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  manageExName: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
+  manageExVals: { fontSize: 11.5, color: COLORS.textFaint },
+  trashBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(229,99,106,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trashText: { color: '#e5636a', fontSize: 15, fontWeight: '700' },
+
+  confirmInline: {
+    backgroundColor: '#241416',
+    borderWidth: 1,
+    borderColor: 'rgba(229,99,106,0.4)',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 8,
+  },
+  confirmText: { fontSize: 12.5, color: '#f0c2c5', lineHeight: 18, marginBottom: 10, textAlign: 'right' },
+  confirmActions: { flexDirection: 'row', gap: 8 },
+  confirmBtn: { flex: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center' },
+  confirmCancel: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.hairline },
+  confirmCancelText: { color: COLORS.textDim, fontSize: 12.5, fontWeight: '700' },
+  confirmDeleteBtn: { backgroundColor: '#e5636a' },
+  confirmDeleteText: { color: '#fff', fontSize: 12.5, fontWeight: '700' },
 });

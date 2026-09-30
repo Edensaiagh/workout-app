@@ -10,29 +10,47 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { saveWorkoutLocally, syncPendingWorkouts, removePendingWorkout } from './localBackup';
+import { updatePersonalRecordsForWorkout } from './personalRecords';
 import { Workout } from '../types/workout';
 
 const WORKOUTS_COLLECTION = 'workouts';
 
-async function pushWorkoutToCloud(workout: Workout): Promise<void> {
+// שומרת את האימון עצמו, ואז מעדכנת שיאים אישיים על בסיסו.
+// מחזירה כמה שיאים נשברו - שימושי מיד אחרי saveWorkout, כדי להציג "X שיאים חדשים"
+// במסך "אימון הושלם" ובכרטיס השיתוף, בלי לקרוא שוב את הנתונים.
+async function pushWorkoutToCloud(workout: Workout): Promise<number> {
   const ref = doc(db, WORKOUTS_COLLECTION, workout.id);
   await setDoc(ref, workout);
+
+  try {
+    return await updatePersonalRecordsForWorkout(workout.userId, workout);
+  } catch {
+    // עדכון השיאים נכשל - אבל האימון עצמו כבר נשמר בהצלחה, אז לא הופכים
+    // את זה לכישלון של השמירה כולה. פשוט הפעם בלי עדכון שיאים.
+    return 0;
+  }
 }
 
-export async function saveWorkout(workout: Workout): Promise<{ savedTo: 'cloud' | 'local' }> {
+export async function saveWorkout(
+  workout: Workout
+): Promise<{ savedTo: 'cloud' | 'local'; newPRsCount: number }> {
   try {
-    await pushWorkoutToCloud(workout);
-    return { savedTo: 'cloud' };
+    const newPRsCount = await pushWorkoutToCloud(workout);
+    return { savedTo: 'cloud', newPRsCount };
   } catch {
     await saveWorkoutLocally(workout);
-    return { savedTo: 'local' };
+    // האימון נשמר רק מקומית - השיאים יתעדכנו בפעם הבאה שהוא יסתנכרן לענן
+    // (syncPendingWorkoutsToCloud, למטה), לא עכשיו.
+    return { savedTo: 'local', newPRsCount: 0 };
   }
 }
 
 // מנסה לשלוח ל-Firestore כל אימון שנתקע מקומית מפעם קודמת (למשל שמירה שנכשלה
 // בגלל נפילת רשת). קוראים לזה בעליית האפליקציה כשיש משתמש מחובר.
+// (משתמשת באותו pushWorkoutToCloud, ולכן גם השיאים מתעדכנים כאן באופן טבעי -
+// רק שאף אחד לא צריך לראות את המספר כרגע, ולכן מתעלמים ממנו).
 export async function syncPendingWorkoutsToCloud(): Promise<{ synced: number; stillPending: number }> {
-  return syncPendingWorkouts(pushWorkoutToCloud);
+  return syncPendingWorkouts((workout) => pushWorkoutToCloud(workout).then(() => undefined));
 }
 
 export async function deleteWorkout(workoutId: string): Promise<void> {
@@ -40,6 +58,9 @@ export async function deleteWorkout(workoutId: string): Promise<void> {
   // גם אם האימון מעולם לא הגיע לענן (נשמר רק מקומית בגלל נפילת רשת),
   // צריך לנקות אותו מהגיבוי המקומי כדי שלא ינסה להיסתנכרן מחדש אחרי המחיקה.
   await removePendingWorkout(workoutId);
+  // הערה: מחיקת אימון לא נוגעת בשיאים האישיים בכלל, גם אם הוא זה שקבע אותם.
+  // מחיקת שיא היא פעולה נפרדת ומודעת, שנעשית ידנית ממסך "ניהול שיאים"
+  // (ראו deletePersonalRecord ב-lib/personalRecords.ts).
 }
 
 export async function getUserWorkouts(
