@@ -75,7 +75,7 @@ export const lightColors: Palette = {
   textDim: '#43444b',
   textFaint: '#7a7b82',
 
-  accent: '#f0a13a',
+  accent: '#e8900c',
   accentText: '#8a4a00',
   accentSoft: 'rgba(217,130,0,0.12)',
   accentDim: '#e3c68a',
