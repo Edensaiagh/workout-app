@@ -16,7 +16,8 @@ import { getPersonalRecords, deletePersonalRecord, PersonalRecordsMap } from '..
 import { useAuth } from '../lib/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import { EmptyState } from '../components/EmptyState';
-import { colors, common, fontSize, iconSize, radius, spacing, touch, Text } from '../theme';
+import { fontSize, iconSize, radius, spacing, touch, Text, useTheme } from '../theme';
+import type { Palette } from '../theme';
 
 const PR_COLLAPSED_COUNT = 4;
 
@@ -81,6 +82,8 @@ function groupByMonth(workouts: Workout[]) {
 }
 
 export default function HistoryScreen() {
+  const { colors, common } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   // מסך זה נטען רק כשיש משתמש מחובר (ראה App.tsx), ולכן user בטוח לא null
   const { user } = useAuth();
   const navigation = useNavigation<any>();
@@ -234,7 +237,7 @@ export default function HistoryScreen() {
           <View style={styles.prCardHead}>
             <View style={{ flex: 1 }}>
               <View style={styles.prTitleRow}>
-                <Ionicons name="trophy" size={iconSize.sm} color={colors.accent} />
+                <Ionicons name="trophy" size={iconSize.sm} color={colors.accentText} />
                 <Text style={styles.prTitle}>השיאים האישיים שלי</Text>
               </View>
               <Text style={styles.prSubtitle}>רק תרגילים מהרשימה הקבועה נספרים כאן</Text>
@@ -288,7 +291,7 @@ export default function HistoryScreen() {
 
         {loading && (
           <View style={styles.centerFill}>
-            <ActivityIndicator color={colors.accent} />
+            <ActivityIndicator color={colors.accentText} />
           </View>
         )}
 
@@ -392,7 +395,7 @@ export default function HistoryScreen() {
 
           <View style={styles.detailStats}>
             <View style={styles.dstat}>
-              <Text style={[styles.dstatNum, { color: colors.accent }]}>
+              <Text style={[styles.dstatNum, { color: colors.accentText }]}>
                 {calcVolume(selectedWorkout).toLocaleString()}
               </Text>
               <Text style={styles.dstatLabel}>ק"ג נפח כולל</Text>
@@ -505,7 +508,7 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   screen: { flex: 1, backgroundColor: colors.bg },
   centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
@@ -537,7 +540,7 @@ const styles = StyleSheet.create({
   prExerciseName: { fontSize: 13.5, fontWeight: '600', color: colors.text },
   prValsRow: { flexDirection: 'row', gap: 14 },
   prVal: { alignItems: 'center', minWidth: 40 },
-  prValNum: { fontSize: 13, fontWeight: '700', color: colors.accent },
+  prValNum: { fontSize: 13, fontWeight: '700', color: colors.accentText },
   prValLabel: { fontSize: 11, color: colors.textFaint, marginTop: 1 },
   // אותו סגנון "הצג עוד" שכבר קיים ב-AnalysisScreen.tsx - מסגרת בלבד, בלי מילוי
   showMoreButton: { marginTop: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.line, alignItems: 'center' },
@@ -623,7 +626,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  manageLinkText: { color: colors.accent, fontSize: 12, fontWeight: '700' },
+  manageLinkText: { color: colors.accentText, fontSize: 12, fontWeight: '700' },
 
   // ---- מסך ניהול שיאים (אותו דפוס בדיוק כמו detailScreen/detailHeader) ----
   manageHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 48, paddingBottom: 6 },

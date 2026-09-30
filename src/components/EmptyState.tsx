@@ -2,10 +2,11 @@
 //
 // מצב ריק אחיד לכל המסכים: אייקון, כותרת, הסבר, ואופציונלית כפתור פעולה.
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, common, fontSize, spacing, Text } from '../theme';
+import { fontSize, spacing, Text, useTheme } from '../theme';
+import type { Palette } from '../theme';
 
 interface EmptyStateProps {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -16,6 +17,8 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ icon, title, subtitle, actionLabel, onAction }: EmptyStateProps) {
+  const { colors, common } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.wrap}>
       <View style={styles.iconCircle}>
@@ -32,7 +35,7 @@ export function EmptyState({ icon, title, subtitle, actionLabel, onAction }: Emp
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) => StyleSheet.create({
   wrap: { alignItems: 'center', paddingHorizontal: spacing.xl },
   iconCircle: {
     width: 72,

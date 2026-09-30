@@ -12,10 +12,10 @@
 //   - לרווחים בצד משתמשים ב-marginStart/marginEnd/paddingStart/paddingEnd, לא left/right.
 
 import { StyleSheet } from 'react-native';
-import { colors } from './colors';
+import type { Palette } from './colors';
 import { fontSize, radius, spacing, touch } from './metrics';
 
-export const common = StyleSheet.create({
+export const createCommon = (colors: Palette) => StyleSheet.create({
   // ---- מסכים וכרטיסים ----
   screen: { flex: 1, backgroundColor: colors.bg },
   centered: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },

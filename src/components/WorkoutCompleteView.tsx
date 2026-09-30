@@ -17,7 +17,8 @@ import { ShareWorkoutButton } from './ShareWorkoutButton';
 import { buildShareCardDataFromWorkout, getWorkoutsThisWeekCount } from '../lib/shareStats';
 import type { BrokenRecord } from '../lib/personalRecords';
 import { haptics } from '../lib/haptics';
-import { colors, common, fontSize, radius, spacing, Text } from '../theme';
+import { fontSize, radius, spacing, Text, useTheme } from '../theme';
+import type { Palette } from '../theme';
 
 interface WorkoutCompleteViewProps {
   workout: Workout;
@@ -50,7 +51,6 @@ function formatWorkoutDate(ms: number): string {
 
 // ---- קונפטי: 26 חלקים, נופלים פעם אחת ----
 const CONFETTI_COUNT = 26;
-const CONFETTI_COLORS = [colors.accent, colors.teal, colors.info, colors.text, colors.accent, colors.danger];
 const CONFETTI_FALL = 470;
 const CONFETTI_DRIFT = [-46, 38, -16, 64];
 
@@ -65,12 +65,13 @@ interface ConfettiPiece {
   spin: number;
 }
 
-function buildConfetti(): ConfettiPiece[] {
+function buildConfetti(colors: Palette): ConfettiPiece[] {
+  const palette = [colors.accentText, colors.teal, colors.info, colors.text, colors.accentText, colors.danger];
   return Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
     left: `${6 + ((i * 37) % 88)}%` as const,
     width: 6 + (i % 3) * 2,
     height: 10 + (i % 4) * 2,
-    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    color: palette[i % palette.length],
     delay: (i % 7) * 90,
     duration: 2200 + (i % 5) * 250,
     drift: CONFETTI_DRIFT[i % 4],
@@ -114,6 +115,8 @@ function ConfettiPieceView({ piece }: { piece: ConfettiPiece }) {
 
 // ---- טבעת שמתפשטת מהתג ----
 function PulseRing({ delay }: { delay: number }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const t = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -190,6 +193,8 @@ export function WorkoutCompleteView({
   onStartNew,
   appName,
 }: WorkoutCompleteViewProps) {
+  const { colors, common } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [shareData, setShareData] = useState<ShareCardData | null>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -238,7 +243,7 @@ export function WorkoutCompleteView({
     ]).start();
   }, [animate]);
 
-  const confetti = useMemo(buildConfetti, []);
+  const confetti = useMemo(() => buildConfetti(colors), [colors]);
 
   const durationMinutes =
     workout.finishedAt != null ? Math.max(0, Math.round((workout.finishedAt - workout.startedAt) / 60000)) : 0;
@@ -259,8 +264,8 @@ export function WorkoutCompleteView({
           <Svg width="100%" height="100%">
             <Defs>
               <RadialGradient id="prGlow" cx="50%" cy="30%" rx="50%" ry="45%">
-                <Stop offset="0" stopColor={colors.accent} stopOpacity={0.16} />
-                <Stop offset="1" stopColor={colors.accent} stopOpacity={0} />
+                <Stop offset="0" stopColor={colors.accentText} stopOpacity={0.16} />
+                <Stop offset="1" stopColor={colors.accentText} stopOpacity={0} />
               </RadialGradient>
             </Defs>
             <Rect x="0" y="0" width="100%" height="100%" fill="url(#prGlow)" />
@@ -286,7 +291,7 @@ export function WorkoutCompleteView({
               </>
             )}
             <Animated.View style={[styles.badge, { opacity: badgeOpacity, transform: [{ scale: badgeScale }] }]}>
-              <Ionicons name="trophy-outline" size={46} color={colors.accent} />
+              <Ionicons name="trophy-outline" size={46} color={colors.accentText} />
             </Animated.View>
           </View>
 
@@ -328,7 +333,7 @@ export function WorkoutCompleteView({
           <Wrap delay={700} style={styles.recordsCardWrap}>
             <View style={styles.recordsCard}>
               <View style={styles.recordsHeader}>
-                <Ionicons name="trophy-outline" size={16} color={colors.accent} />
+                <Ionicons name="trophy-outline" size={16} color={colors.accentText} />
                 <Text style={styles.recordsTitle}>השיאים שנשברו באימון</Text>
               </View>
               {newRecords.map((r, i) => (
@@ -389,7 +394,7 @@ function PlainWrap({ children, style }: { delay?: number; children: React.ReactN
 
 const BADGE_SIZE = 96;
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: spacing.lg, paddingTop: 64, paddingBottom: spacing.xxl, gap: spacing.lg },
   glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 330 },
@@ -415,7 +420,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: BADGE_SIZE / 2,
     borderWidth: 2,
-    borderColor: colors.accent,
+    borderColor: colors.accentText,
   },
   title: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.text, textAlign: 'center' },
   subtitle: { fontSize: 14, color: colors.textDim, textAlign: 'center' },
@@ -428,7 +433,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  prChipText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.accent },
+  prChipText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.accentText },
 
   statsRow: { flexDirection: 'row', gap: 10, marginTop: spacing.xs },
   statCard: {
@@ -441,7 +446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
-  statValue: { fontSize: fontSize.xl, fontWeight: '700', color: colors.accent, fontVariant: ['tabular-nums'] },
+  statValue: { fontSize: fontSize.xl, fontWeight: '700', color: colors.accentText, fontVariant: ['tabular-nums'] },
   statLabel: { fontSize: fontSize.xs, color: colors.textDim },
 
   recordsCardWrap: { width: '100%' },
@@ -469,7 +474,7 @@ const styles = StyleSheet.create({
   recordName: { fontSize: fontSize.md, fontWeight: '600', color: colors.text },
   recordKind: { fontSize: fontSize.xs, color: colors.textDim },
   recordValues: { alignItems: 'flex-end', gap: 2 },
-  recordValue: { fontSize: 16, fontWeight: '700', color: colors.accent, fontVariant: ['tabular-nums'] },
+  recordValue: { fontSize: 16, fontWeight: '700', color: colors.accentText, fontVariant: ['tabular-nums'] },
   recordDelta: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   recordDeltaText: { fontSize: fontSize.xs, fontWeight: '600', color: colors.teal, fontVariant: ['tabular-nums'] },
 

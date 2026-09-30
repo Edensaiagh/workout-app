@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, fontAssets, fontSize, iconSize, spacing, touch } from './src/theme';
+import { ThemeProvider, useTheme, fontAssets, fontSize, iconSize, spacing, touch } from './src/theme';
 import WorkoutTrackerScreen from './src/screens/WorkoutTrackerScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
@@ -17,20 +18,8 @@ import { syncPendingWorkoutsToCloud } from './src/lib/workoutService';
 
 const Tab = createBottomTabNavigator();
 
-// ערכת נושא של הניווט - כל הצבעים מגיעים מ-src/theme/colors.ts
-const AppTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.bg,
-    card: colors.surface,
-    border: colors.line,
-    primary: colors.accent,
-    text: colors.text,
-  },
-};
-
 function AppTabs() {
+  const { colors } = useTheme();
   // גובה הסרגל כולל את האזור הבטוח של המכשיר (סרגל הניווט/הבית של הטלפון)
   const insets = useSafeAreaInsets();
 
@@ -38,7 +27,7 @@ function AppTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: colors.accent,
+        tabBarActiveTintColor: colors.accentText,
         tabBarInactiveTintColor: colors.textFaint,
         tabBarStyle: {
           backgroundColor: colors.surface,
@@ -73,6 +62,7 @@ function AppTabs() {
 }
 
 function Root() {
+  const { colors } = useTheme();
   const { user, initializing } = useAuth();
 
   // בעליית האפליקציה, אם יש משתמש מחובר, מנסים לסנכרן אימונים שנתקעו
@@ -87,7 +77,7 @@ function Root() {
   if (initializing) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={colors.accent} size="large" />
+        <ActivityIndicator color={colors.accentText} size="large" />
       </View>
     );
   }
@@ -95,20 +85,45 @@ function Root() {
   return user ? <AppTabs /> : <LoginScreen />;
 }
 
-export default function App() {
-  // בזמן שהגופן נטען מציגים רק רקע כהה; אם הטעינה נכשלת ממשיכים עם גופן המערכת
+function AppShell() {
+  const { colors, scheme } = useTheme();
+
+  // בזמן שהגופן נטען מציגים רק רקע; אם הטעינה נכשלת ממשיכים עם גופן המערכת
   const [fontsLoaded, fontError] = useFonts(fontAssets);
   if (!fontsLoaded && !fontError) {
     return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   }
 
+  // ערכת נושא של הניווט - כל הצבעים מגיעים מ-src/theme/colors.ts
+  const base = scheme === 'light' ? DefaultTheme : DarkTheme;
+  const navTheme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: colors.bg,
+      card: colors.surface,
+      border: colors.line,
+      primary: colors.accentText,
+      text: colors.text,
+    },
+  };
+
   return (
     <SafeAreaProvider>
+      <StatusBar style={scheme === 'light' ? 'dark' : 'light'} />
       <AuthProvider>
-        <NavigationContainer theme={AppTheme}>
+        <NavigationContainer theme={navTheme}>
           <Root />
         </NavigationContainer>
       </AuthProvider>
     </SafeAreaProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppShell />
+    </ThemeProvider>
   );
 }

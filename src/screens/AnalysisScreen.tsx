@@ -16,7 +16,8 @@ import { getUserWorkouts } from '../lib/workoutService';
 import { Workout } from '../types/workout';
 import { Ionicons } from '@expo/vector-icons';
 import { EmptyState } from '../components/EmptyState';
-import { colors, common, iconSize, radius, spacing, touch, Text } from '../theme';
+import { iconSize, radius, spacing, touch, Text, useTheme } from '../theme';
+import type { Palette } from '../theme';
 
 const HE_MONTHS_FULL = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 const HE_MONTHS_SHORT = ['ינו', 'פבר', 'מרץ', 'אפר', 'מאי', 'יונ', 'יול', 'אוג', 'ספט', 'אוק', 'נוב', 'דצמ'];
@@ -71,6 +72,8 @@ interface MetricPoint { date: string; sets: number; reps: number; volume: number
 interface RestWorkPoint { date: string; durationMin: number; workMin: number; restMin: number; }
 
 export default function AnalysisScreen() {
+  const { colors, common } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { user } = useAuth();
   const navigation = useNavigation<any>();
 
@@ -450,7 +453,7 @@ export default function AnalysisScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centerContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { color: colors.warning, fontSize: 15, textAlign: 'center', writingDirection: 'rtl' },

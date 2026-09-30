@@ -20,7 +20,8 @@ import {
   MuscleGroup,
 } from '../constants/exerciseLibrary';
 import type { TextInput as RNTextInput } from 'react-native';
-import { colors, common, fontSize, radius, spacing, touch, Text, TextInput } from '../theme';
+import { fontSize, radius, spacing, touch, Text, TextInput, useTheme } from '../theme';
+import type { Palette } from '../theme';
 
 type Tab = 'library' | 'history';
 
@@ -43,6 +44,8 @@ const LRM = '\u200E';
 
 // הגיליון התחתון, עם ריווח תחתון לפי סרגל הניווט של המכשיר
 function SafeSheet({ children }: { children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   return <View style={[styles.sheet, { paddingBottom: 16 + insets.bottom }]}>{children}</View>;
 }
@@ -62,6 +65,8 @@ export default function ExerciseNamePicker({
   onClose,
   onConfirm,
 }: Props) {
+  const { colors, common } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [text, setText] = useState(currentName);
   const [tab, setTab] = useState<Tab>('library');
   const [group, setGroup] = useState<GroupFilter>(null);
@@ -200,7 +205,7 @@ export default function ExerciseNamePicker({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: colors.overlay,

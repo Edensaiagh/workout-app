@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, Text } from '../theme';
+import { darkColors as colors, Text } from '../theme';
 
 export interface ExerciseVolume {
   name: string;

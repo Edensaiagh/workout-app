@@ -3,11 +3,12 @@
 // שדה מספר עם כפתורי + / −: מספר גדול באמצע (אפשר להקליד), ומתחתיו שני כפתורים גדולים.
 // לחיצה ארוכה על כפתור משנה את הערך שוב ושוב (מואץ), עם רטט קל בכל צעד.
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { haptics } from '../lib/haptics';
-import { colors, iconSize, radius, Text, TextInput } from '../theme';
+import { iconSize, radius, Text, TextInput, useTheme } from '../theme';
+import type { Palette } from '../theme';
 
 interface StepperFieldProps {
   label: string;
@@ -45,6 +46,8 @@ export function StepperField({
   minusLabel,
   plusLabel,
 }: StepperFieldProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   // הערך העדכני נשמר ב-ref כדי שה-interval של לחיצה ארוכה לא "יתקע" על ערך ישן
   const valueRef = useRef(value);
   valueRef.current = value;
@@ -119,7 +122,7 @@ export function StepperField({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) => StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: colors.surface,

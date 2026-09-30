@@ -1,5 +1,5 @@
 // src/screens/LoginScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -15,11 +15,14 @@ import {
   signInWithGoogle,
   authErrorMessage,
 } from '../lib/auth';
-import { colors, common, fontSize, radius, spacing, touch, Text, TextInput } from '../theme';
+import { fontSize, radius, spacing, touch, Text, TextInput, useTheme } from '../theme';
+import type { Palette } from '../theme';
 
 type Mode = 'signIn' | 'signUp';
 
 export default function LoginScreen() {
+  const { colors, common } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -144,7 +147,7 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   scrollContent: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
   title: { fontSize: 30, fontWeight: '800', color: colors.text, textAlign: 'center' },
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
   errorText: { color: colors.danger, fontSize: fontSize.sm, textAlign: 'center', marginBottom: spacing.md },
   submitButton: { marginTop: spacing.xs },
   switchModeText: {
-    color: colors.accent,
+    color: colors.accentText,
     fontSize: fontSize.sm + 1,
     fontWeight: '600',
     textAlign: 'center',

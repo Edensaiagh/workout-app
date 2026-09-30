@@ -1,5 +1,5 @@
 // src/screens/WorkoutTrackerScreen.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -19,7 +19,8 @@ import type { BrokenRecord } from '../lib/personalRecords';
 import { Workout } from '../types/workout';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, common, fontSize, iconSize, radius, spacing, touch, Text } from '../theme';
+import { fontSize, iconSize, radius, spacing, touch, Text, useTheme } from '../theme';
+import type { Palette } from '../theme';
 
 function fmt(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -28,6 +29,8 @@ function fmt(totalSeconds: number): string {
 }
 
 export default function WorkoutTrackerScreen() {
+  const { colors, common } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   // מסך זה נטען רק כשיש משתמש מחובר (ראה App.tsx), ולכן user בטוח לא null
   const { user } = useAuth();
   const userId = user!.uid;
@@ -320,7 +323,7 @@ export default function WorkoutTrackerScreen() {
               cx={REST_RING_SIZE / 2}
               cy={REST_RING_SIZE / 2}
               r={REST_RING_RADIUS}
-              stroke={restRemaining <= 5 ? colors.danger : colors.accent}
+              stroke={restRemaining <= 5 ? colors.danger : colors.accentText}
               strokeWidth={REST_RING_STROKE}
               strokeLinecap="round"
               fill="none"
@@ -541,7 +544,7 @@ const REST_RING_RADIUS = 96;
 const REST_RING_STROKE = 14;
 const REST_RING_CIRCUMFERENCE = 2 * Math.PI * REST_RING_RADIUS;
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centerContainer: {
     flex: 1,

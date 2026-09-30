@@ -1,9 +1,11 @@
 // src/theme/index.ts
-// נקודת כניסה אחת לעיצוב: import { colors, spacing, common } from '../theme';
+// נקודת כניסה אחת לעיצוב: import { useTheme, spacing } from '../theme';
 
-export { colors } from './colors';
-export type { ColorName } from './colors';
+export { darkColors, lightColors } from './colors';
+export type { ColorName, Palette } from './colors';
+export { ThemeProvider, useTheme } from './ThemeProvider';
+export type { ThemeMode, Scheme } from './ThemeProvider';
 export { spacing, radius, fontSize, touch, iconSize } from './metrics';
-export { common } from './common';
+export { createCommon } from './common';
 export { Text, TextInput } from './Text';
 export { fontAssets } from './typography';

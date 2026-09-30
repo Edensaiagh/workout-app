@@ -1,11 +1,12 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { View, TouchableOpacity, Modal, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { ShareCard, ShareCardData } from './ShareCard';
-import { colors, common, spacing, Text } from '../theme';
+import { spacing, Text, useTheme } from '../theme';
+import type { Palette } from '../theme';
 
 interface ShareWorkoutButtonProps {
   data: ShareCardData;
@@ -13,6 +14,8 @@ interface ShareWorkoutButtonProps {
 }
 
 export function ShareWorkoutButton({ data, appName }: ShareWorkoutButtonProps) {
+  const { colors, common } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [modalVisible, setModalVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -96,7 +99,7 @@ export function ShareWorkoutButton({ data, appName }: ShareWorkoutButtonProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) => StyleSheet.create({
   fullWidth: { width: '100%' },
   // flexDirection 'row' כבר מסדר מימין לשמאל כי האפליקציה רצה ב-RTL כפוי
   row: { flexDirection: 'row', gap: spacing.sm },
