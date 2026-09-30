@@ -63,44 +63,44 @@ export type ColorName = keyof typeof darkColors;
 export type Palette = { [K in ColorName]: string };
 
 export const lightColors: Palette = {
-  bg: '#f6f5f1',
-  surface: '#ffffff',
-  surfaceRaised: '#efece5',
-  surfaceHigh: '#e4e1d8',
+  bg: '#ebe8e0',
+  surface: '#f7f5ef',
+  surfaceRaised: '#e2ded4',
+  surfaceHigh: '#d6d1c5',
 
-  line: '#dcd8ce',
-  lineStrong: '#c9c5b9',
+  line: '#cdc8bb',
+  lineStrong: '#b9b4a6',
 
   text: '#121110',
   textDim: '#43444b',
   textFaint: '#7a7b82',
 
-  accent: '#ffb454',
+  accent: '#f0a13a',
   accentText: '#8a4a00',
   accentSoft: 'rgba(217,130,0,0.12)',
-  accentDim: '#f1d59f',
-  accentBadgeBg: '#fff0d2',
-  accentBadgeBorder: '#eccf94',
+  accentDim: '#e3c68a',
+  accentBadgeBg: '#f6e3bb',
+  accentBadgeBorder: '#dcbd7c',
   onAccent: '#141414',
 
-  danger: '#c9363f',
-  dangerBorder: 'rgba(201,54,63,0.45)',
-  dangerBg: '#fdeceb',
+  danger: '#b8323a',
+  dangerBorder: 'rgba(184,50,58,0.45)',
+  dangerBg: '#f1dbd8',
   dangerText: '#7a1d23',
-  success: '#1f9a3d',
-  warning: '#b26a00',
+  success: '#2a8a44',
+  warning: '#a86300',
 
-  chartPrimary: '#3f6fe0',
-  chartPrimarySoft: 'rgba(63,111,224,0.12)',
-  chartRest: '#c77700',
+  chartPrimary: '#3a63c7',
+  chartPrimarySoft: 'rgba(58,99,199,0.12)',
+  chartRest: '#b86f00',
 
-  teal: '#0f7f70',
-  info: '#2f6fb5',
+  teal: '#157a6c',
+  info: '#2f65a5',
 
   // כרטיס השיתוף נשאר כהה בשני המראות - הוא מצולם כתמונה
   shareCardBg: '#141414',
   shareCardBorder: '#2a2a2a',
 
   overlay: 'rgba(0,0,0,0.5)',
-  white: '#ffffff',
+  white: '#f7f5ef',
 };
