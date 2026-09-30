@@ -3,6 +3,7 @@
 // נשמר תמיד השם העברי בלבד. השם באנגלית משמש להצגה ולחיפוש.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Modal,
   View,
@@ -38,7 +39,13 @@ const CHIPS: { group: GroupFilter; label: string; count: number }[] = [
 ];
 
 // LRM סביב השם באנגלית, כדי שהסוגריים לא יתהפכו בתוך טקסט RTL
-const LRM = '‎';
+const LRM = '\u200E';
+
+// הגיליון התחתון, עם ריווח תחתון לפי סרגל הניווט של המכשיר
+function SafeSheet({ children }: { children: React.ReactNode }) {
+  const insets = useSafeAreaInsets();
+  return <View style={[styles.sheet, { paddingBottom: 16 + insets.bottom }]}>{children}</View>;
+}
 
 interface Props {
   visible: boolean;
@@ -97,8 +104,10 @@ export default function ExerciseNamePicker({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      {/* Modal הוא חלון נפרד באנדרואיד, ולכן צריך SafeAreaProvider משלו כדי שכפתורי השמירה לא יישארו מתחת לסרגל הניווט */}
+      <SafeAreaProvider>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+        <SafeSheet>
           <Text style={styles.title}>שם התרגיל</Text>
 
           <TextInput
@@ -184,9 +193,10 @@ export default function ExerciseNamePicker({
               <Text style={styles.confirmButtonText}>שמור</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </SafeSheet>
       </View>
-    </Modal>
+    </SafeAreaProvider>
+  </Modal>
   );
 }
 
