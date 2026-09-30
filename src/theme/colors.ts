@@ -83,19 +83,19 @@ export const lightColors: Palette = {
   accentBadgeBorder: '#dcbd7c',
   onAccent: '#141414',
 
-  danger: '#b8323a',
-  dangerBorder: 'rgba(184,50,58,0.45)',
+  danger: '#d0454d',
+  dangerBorder: 'rgba(208,69,77,0.5)',
   dangerBg: '#f1dbd8',
   dangerText: '#7a1d23',
-  success: '#2a8a44',
-  warning: '#a86300',
+  success: '#2fa04c',
+  warning: '#c47600',
 
-  chartPrimary: '#3a63c7',
-  chartPrimarySoft: 'rgba(58,99,199,0.12)',
-  chartRest: '#b86f00',
+  chartPrimary: '#4a76e0',
+  chartPrimarySoft: 'rgba(74,118,224,0.14)',
+  chartRest: '#d98400',
 
-  teal: '#157a6c',
-  info: '#2f65a5',
+  teal: '#1c9484',
+  info: '#3a78c2',
 
   // כרטיס השיתוף נשאר כהה בשני המראות - הוא מצולם כתמונה
   shareCardBg: '#141414',
