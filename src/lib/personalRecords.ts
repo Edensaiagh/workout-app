@@ -4,13 +4,13 @@
 // לא נטענים או נבדקים בזמן אמת במסך האימון. מוצגים במסך ההיסטוריה, ומספר השיאים
 // שנשברו באימון האחרון מוצג במסך "אימון הושלם" ובכרטיס השיתוף.
 //
-// חשוב: רק תרגילים שהשם שלהם (אחרי trim) מופיע בדיוק ב-COMMON_EXERCISES נספרים.
+// חשוב: רק תרגילים שהשם שלהם (אחרי trim) מופיע בדיוק ב-EXERCISE_NAMES (ספריית התרגילים) נספרים.
 // תרגיל שהוקלד חופשי ולא מופיע ברשימה - הסטים שלו נשמרים כרגיל באימון עצמו,
 // אבל הוא לא משפיע על personalRecords ולא מוצג במסך ההיסטוריה בתור שיא.
 
 import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { db } from './firebase';
-import { COMMON_EXERCISES } from '../constants/commonExercises';
+import { EXERCISE_NAMES } from '../constants/exerciseLibrary';
 import { Workout } from '../types/workout';
 
 const PERSONAL_RECORDS_COLLECTION = 'personalRecords';
@@ -24,7 +24,7 @@ export interface ExerciseRecord {
 
 export type PersonalRecordsMap = Record<string, ExerciseRecord>;
 
-const COMMON_EXERCISES_SET = new Set(COMMON_EXERCISES);
+const LIBRARY_EXERCISES_SET = new Set(EXERCISE_NAMES);
 
 function emptyRecord(): Omit<ExerciseRecord, 'updatedAt'> {
   return { maxWeight: 0, maxReps: 0, maxSessionVolume: 0 };
@@ -37,7 +37,7 @@ export async function getPersonalRecords(userId: string): Promise<PersonalRecord
 }
 
 /**
- * מחשב, לכל תרגיל מוכר (מ-COMMON_EXERCISES) שמופיע באימון הזה:
+ * מחשב, לכל תרגיל מוכר (מספריית התרגילים) שמופיע באימון הזה:
  * המשקל המקסימלי בסט בודד, מספר החזרות המקסימלי בסט בודד, והנפח הכולל של
  * התרגיל באימון הזה (סכום reps*weight על פני כל הסטים שלו באימון).
  *
@@ -49,7 +49,7 @@ function recordsFromWorkout(workout: Workout): Record<string, Omit<ExerciseRecor
 
   workout.exercises.forEach((ex) => {
     const name = ex.name.trim();
-    if (!COMMON_EXERCISES_SET.has(name)) return; // תרגיל חופשי שלא ברשימה - לא נספר
+    if (!LIBRARY_EXERCISES_SET.has(name)) return; // תרגיל חופשי שלא ברשימה - לא נספר
     if (ex.sets.length === 0) return;
 
     let maxWeight = 0;
