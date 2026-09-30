@@ -2,8 +2,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -17,7 +15,7 @@ import {
   signInWithGoogle,
   authErrorMessage,
 } from '../lib/auth';
-import { colors, common, fontSize, radius, spacing, touch } from '../theme';
+import { colors, common, fontSize, radius, spacing, touch, Text, TextInput } from '../theme';
 
 type Mode = 'signIn' | 'signUp';
 

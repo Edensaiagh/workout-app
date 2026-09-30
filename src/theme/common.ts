@@ -87,6 +87,10 @@ export const common = StyleSheet.create({
   },
   backButtonText: { color: colors.text, fontSize: fontSize.md + 1, fontWeight: '700' },
 
+  // ---- כותרת מסך (היסטוריה, ניתוח) ----
+  pageTitle: { color: colors.text, fontSize: fontSize.xxl - 2, fontWeight: '800' },
+  pageSubtitle: { color: colors.textDim, fontSize: fontSize.sm, marginTop: 2 },
+
   // ---- מצב מבוטל ----
   disabled: { opacity: 0.4 },
 });

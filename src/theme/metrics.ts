@@ -21,7 +21,7 @@ export const radius = {
 } as const;
 
 export const fontSize = {
-  xs: 11,
+  xs: 12, // הגודל הקטן ביותר בשימוש (לא יורדים מתחת ל-11 בשום מקום בטקסט רגיל)
   sm: 13,
   md: 15,
   lg: 17,

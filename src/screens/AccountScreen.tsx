@@ -1,9 +1,9 @@
 // src/screens/AccountScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../lib/authContext';
 import { logOut } from '../lib/auth';
-import { colors, common, fontSize } from '../theme';
+import { colors, common, fontSize, Text } from '../theme';
 
 export default function AccountScreen() {
   const { user } = useAuth();

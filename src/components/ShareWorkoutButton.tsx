@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, TouchableOpacity, Modal, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { ShareCard, ShareCardData } from './ShareCard';
-import { colors, common, spacing } from '../theme';
+import { colors, common, spacing, Text } from '../theme';
 
 interface ShareWorkoutButtonProps {
   data: ShareCardData;

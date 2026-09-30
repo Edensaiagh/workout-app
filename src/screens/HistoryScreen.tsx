@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -10,13 +9,14 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Workout } from '../types/workout';
 import { getUserWorkouts, deleteWorkout } from '../lib/workoutService';
 import { getPersonalRecords, deletePersonalRecord, PersonalRecordsMap } from '../lib/personalRecords';
 import { useAuth } from '../lib/authContext';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, common, fontSize, iconSize, radius, spacing, touch } from '../theme';
+import { EmptyState } from '../components/EmptyState';
+import { colors, common, fontSize, iconSize, radius, spacing, touch, Text } from '../theme';
 
 const PR_COLLAPSED_COUNT = 4;
 
@@ -83,6 +83,7 @@ function groupByMonth(workouts: Workout[]) {
 export default function HistoryScreen() {
   // מסך זה נטען רק כשיש משתמש מחובר (ראה App.tsx), ולכן user בטוח לא null
   const { user } = useAuth();
+  const navigation = useNavigation<any>();
   const userId = user!.uid;
 
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -225,14 +226,17 @@ export default function HistoryScreen() {
         style={[styles.screen, { transform: [{ translateX: listTranslate }], opacity: listOpacity }]}
       >
         <View style={styles.topbar}>
-          <Text style={styles.h1}>היסטוריה</Text>
-          <Text style={styles.subtitle}>כל האימונים שלך במקום אחד</Text>
+          <Text style={common.pageTitle}>היסטוריה</Text>
+          <Text style={common.pageSubtitle}>כל האימונים שלך במקום אחד</Text>
         </View>
 
         <View style={styles.prCard}>
           <View style={styles.prCardHead}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.prTitle}>🏆 השיאים האישיים שלי</Text>
+              <View style={styles.prTitleRow}>
+                <Ionicons name="trophy" size={iconSize.sm} color={colors.accent} />
+                <Text style={styles.prTitle}>השיאים האישיים שלי</Text>
+              </View>
               <Text style={styles.prSubtitle}>רק תרגילים מהרשימה הקבועה נספרים כאן</Text>
             </View>
             {prExerciseNames.length > 0 && (
@@ -296,7 +300,13 @@ export default function HistoryScreen() {
 
         {!loading && !loadError && workouts.length === 0 && (
           <View style={styles.centerFill}>
-            <Text style={styles.emptyText}>עוד אין אימונים שמורים. אחרי שתסיימי אימון ראשון, הוא יופיע כאן.</Text>
+            <EmptyState
+              icon="barbell-outline"
+              title="עוד אין אימונים שמורים"
+              subtitle="אחרי שתסיימי אימון ראשון, הוא יופיע כאן."
+              actionLabel="התחל אימון"
+              onAction={() => navigation.navigate('אימון')}
+            />
           </View>
         )}
 
@@ -404,7 +414,10 @@ export default function HistoryScreen() {
                 {ex.sets.map((set, i) => (
                   <React.Fragment key={set.id}>
                     {i > 0 && set.restBeforeSeconds !== null && (
-                      <Text style={styles.restBetween}>⏱ מנוחה: {fmtRest(set.restBeforeSeconds)}</Text>
+                      <View style={styles.restBetween}>
+                        <Ionicons name="timer-outline" size={iconSize.sm - 4} color={colors.textFaint} />
+                        <Text style={styles.restBetweenText}>מנוחה: {fmtRest(set.restBeforeSeconds)}</Text>
+                      </View>
                     )}
                     <View style={styles.setRow}>
                       <View style={styles.setNum}>
@@ -497,10 +510,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
   errorText: { color: colors.textDim, fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  emptyText: { color: colors.textFaint, fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  topbar: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, alignItems: 'center' },
-  h1: { fontSize: 28, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  subtitle: { fontSize: 13, color: colors.textDim, marginTop: 2, textAlign: 'center' },
+  topbar: { paddingHorizontal: 20, paddingTop: 48, paddingBottom: spacing.md },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   prCard: {
     marginHorizontal: 16,
@@ -511,8 +521,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 16,
   },
+  prTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   prTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
-  prSubtitle: { fontSize: 11.5, color: colors.textFaint, marginTop: 2, marginBottom: 12 },
+  prSubtitle: { fontSize: 12, color: colors.textFaint, marginTop: 2, marginBottom: 12 },
   prEmptyText: { fontSize: 12.5, color: colors.textFaint, textAlign: 'center', lineHeight: 18, paddingVertical: 4 },
   prRow: {
     flexDirection: 'row',
@@ -527,7 +538,7 @@ const styles = StyleSheet.create({
   prValsRow: { flexDirection: 'row', gap: 14 },
   prVal: { alignItems: 'center', minWidth: 40 },
   prValNum: { fontSize: 13, fontWeight: '700', color: colors.accent },
-  prValLabel: { fontSize: 9, color: colors.textFaint, marginTop: 1 },
+  prValLabel: { fontSize: 11, color: colors.textFaint, marginTop: 1 },
   // אותו סגנון "הצג עוד" שכבר קיים ב-AnalysisScreen.tsx - מסגרת בלבד, בלי מילוי
   showMoreButton: { marginTop: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.line, alignItems: 'center' },
   showMoreText: { color: colors.textDim, fontSize: 12.5, fontWeight: '700', textAlign: 'center' },
@@ -586,11 +597,12 @@ const styles = StyleSheet.create({
   detailStats: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16 },
   dstat: { flex: 1, alignItems: 'center' },
   dstatNum: { fontSize: 20, fontWeight: '800', color: colors.text },
-  dstatLabel: { fontSize: 10.5, color: colors.textFaint, marginTop: 3 },
+  dstatLabel: { fontSize: 11, color: colors.textFaint, marginTop: 3 },
   detailList: { paddingHorizontal: 20, paddingBottom: 30 },
   exBlock: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.line },
   exName: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 10, textAlign: 'center', alignSelf: 'center' },
-  restBetween: { textAlign: 'center', alignSelf: 'center', color: colors.textFaint, fontSize: 12, paddingVertical: 3 },
+  restBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 3 },
+  restBetweenText: { color: colors.textFaint, fontSize: 12 },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   setNum: {
     width: 22,
@@ -600,7 +612,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  setNumText: { fontSize: 11.5, fontWeight: '700', color: colors.textFaint },
+  setNumText: { fontSize: 12, fontWeight: '700', color: colors.textFaint },
   setDetail: { fontSize: 13.5, color: colors.textDim },
 
   // ---- כרטיס השיאים: כותרת + כפתור ניהול ----
@@ -634,7 +646,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   manageExName: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 4 },
-  manageExVals: { fontSize: 11.5, color: colors.textFaint },
+  manageExVals: { fontSize: 12, color: colors.textFaint },
 
   confirmInline: {
     backgroundColor: colors.dangerBg,

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Workout } from '../types/workout';
 import { ShareCardData } from './ShareCard';
 import { ShareWorkoutButton } from './ShareWorkoutButton';
 import { buildShareCardDataFromWorkout, getWorkoutsThisWeekCount } from '../lib/shareStats';
-import { colors, common, fontSize, radius, spacing } from '../theme';
+import { colors, common, fontSize, radius, spacing, Text } from '../theme';
 
 interface WorkoutCompleteViewProps {
   workout: Workout;

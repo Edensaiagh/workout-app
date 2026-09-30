@@ -2,8 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -12,13 +10,14 @@ import {
 import { useWorkoutStore } from '../store/workoutStore';
 import { saveWorkout, getUserWorkouts } from '../lib/workoutService';
 import { useRestSounds } from '../lib/sound';
+import { haptics } from '../lib/haptics';
 import { useAuth } from '../lib/authContext';
 import ExerciseNamePicker from '../components/ExerciseNamePicker';
 import { WorkoutCompleteView } from '../components/WorkoutCompleteView';
 import { Workout } from '../types/workout';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, common, fontSize, iconSize, radius, spacing, touch } from '../theme';
+import { colors, common, fontSize, iconSize, radius, spacing, touch, Text, TextInput } from '../theme';
 
 function fmt(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -98,6 +97,7 @@ export default function WorkoutTrackerScreen() {
         if (!doneFired) {
           doneFired = true;
           playDone();
+          haptics.success();
           completeRestNaturally();
         }
         clearInterval(interval);
@@ -163,6 +163,7 @@ export default function WorkoutTrackerScreen() {
       setSetError(result.error);
       return;
     }
+    haptics.tap();
     setSetError(null);
     setRepsText('');
     setWeightText(String(weight)); // מציעים אוטומטית את אותו משקל לסט הבא, ניתן לערוך
@@ -182,6 +183,7 @@ export default function WorkoutTrackerScreen() {
       Alert.alert('אין עדיין סטים', 'יש להוסיף לפחות סט אחד לפני מעבר לתרגיל הבא');
       return;
     }
+    haptics.tap();
     goToNextExercise();
   };
 
@@ -203,6 +205,7 @@ export default function WorkoutTrackerScreen() {
           'לא הצלחנו להתחבר לענן כרגע, אז שמרנו את האימון על המכשיר. הוא יסונכרן אוטומטית בפעם הבאה שיש רשת.'
         );
       }
+      haptics.success();
       setCompletedWorkout(completed);
       setCompletedSavedTo(result.savedTo);
       setCompletedNewPRsCount(result.newPRsCount);
@@ -485,7 +488,10 @@ export default function WorkoutTrackerScreen() {
       <View style={styles.navRow}>
         <TouchableOpacity
           style={[styles.navButton, currentExerciseIndex === 0 && styles.navButtonDisabled]}
-          onPress={goToPrevExercise}
+          onPress={() => {
+            haptics.tap();
+            goToPrevExercise();
+          }}
           disabled={currentExerciseIndex === 0}
         >
           <Ionicons name="chevron-forward" size={iconSize.md} color={colors.text} />
@@ -615,7 +621,7 @@ const styles = StyleSheet.create({
     minWidth: 58,
   },
   setChipVal: { color: colors.text, fontSize: fontSize.md, fontWeight: '700' },
-  setChipUnit: { color: colors.textDim, fontSize: 9, fontWeight: '600', marginTop: 1 },
+  setChipUnit: { color: colors.textDim, fontSize: 11, fontWeight: '600', marginTop: 1 },
   deleteSetButton: {
     width: 36,
     height: 36,
@@ -664,7 +670,7 @@ const styles = StyleSheet.create({
   },
   fieldInputWeight: { borderColor: colors.info },
   fieldInputReps: { borderColor: colors.teal },
-  fieldHint: { color: colors.textDim, fontSize: 10, textAlign: 'center', marginBottom: 10 },
+  fieldHint: { color: colors.textDim, fontSize: 11, textAlign: 'center', marginBottom: 10 },
   errorText: { color: colors.danger, fontSize: 12, textAlign: 'center', marginBottom: spacing.sm },
 
   restOverlay: {

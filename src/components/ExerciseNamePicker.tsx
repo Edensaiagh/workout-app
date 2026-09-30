@@ -7,8 +7,6 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import {
   Modal,
   View,
-  Text,
-  TextInput,
   TouchableOpacity,
   FlatList,
   ScrollView,
@@ -21,7 +19,8 @@ import {
   MUSCLE_GROUPS,
   MuscleGroup,
 } from '../constants/exerciseLibrary';
-import { colors, common, fontSize, radius, spacing, touch } from '../theme';
+import type { TextInput as RNTextInput } from 'react-native';
+import { colors, common, fontSize, radius, spacing, touch, Text, TextInput } from '../theme';
 
 type Tab = 'library' | 'history';
 
@@ -66,7 +65,7 @@ export default function ExerciseNamePicker({
   const [text, setText] = useState(currentName);
   const [tab, setTab] = useState<Tab>('library');
   const [group, setGroup] = useState<GroupFilter>(null);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<RNTextInput>(null);
 
   useEffect(() => {
     if (visible) {

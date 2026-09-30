@@ -3,9 +3,10 @@ import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator } from 'react-native';
+import { useFonts } from 'expo-font';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, fontSize, iconSize, spacing, touch } from './src/theme';
+import { colors, fontAssets, fontSize, iconSize, spacing, touch } from './src/theme';
 import WorkoutTrackerScreen from './src/screens/WorkoutTrackerScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
@@ -95,6 +96,12 @@ function Root() {
 }
 
 export default function App() {
+  // בזמן שהגופן נטען מציגים רק רקע כהה; אם הטעינה נכשלת ממשיכים עם גופן המערכת
+  const [fontsLoaded, fontError] = useFonts(fontAssets);
+  if (!fontsLoaded && !fontError) {
+    return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
+  }
+
   return (
     <SafeAreaProvider>
       <AuthProvider>

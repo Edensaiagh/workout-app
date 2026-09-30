@@ -9,13 +9,14 @@
 // (התבנית הרגילה של Firebase Auth). אם החתימה אצלך שונה - תעדכן את השורה המסומנת למטה.
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { View, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../lib/authContext'; // ⚠️ עדכני אם הנתיב/החתימה אצלך שונים
 import { getUserWorkouts } from '../lib/workoutService';
 import { Workout } from '../types/workout';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, iconSize, radius, spacing, touch } from '../theme';
+import { EmptyState } from '../components/EmptyState';
+import { colors, common, iconSize, radius, spacing, touch, Text } from '../theme';
 
 const HE_MONTHS_FULL = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 const HE_MONTHS_SHORT = ['ינו', 'פבר', 'מרץ', 'אפר', 'מאי', 'יונ', 'יול', 'אוג', 'ספט', 'אוק', 'נוב', 'דצמ'];
@@ -71,6 +72,7 @@ interface RestWorkPoint { date: string; durationMin: number; workMin: number; re
 
 export default function AnalysisScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation<any>();
 
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
@@ -229,6 +231,8 @@ export default function AnalysisScreen() {
     return p.reps > 0 ? Math.round((p.volume / p.reps) * 10) / 10 : 0;
   };
   const metricUnit = metric === 'intensity' ? ' ק"ג' : '';
+  // כשיש הרבה נקודות (למשל חודש) התוויות לא נכנסות - מציגים תאריך כל 3 עמודות ובלי ערך מעל העמודה
+  const denseChart = metricPoints.length > 14;
   const maxMetricVal = Math.max(1, ...metricPoints.map(getMetricValue)) * 1.15;
 
   if (loading) {
@@ -248,15 +252,20 @@ export default function AnalysisScreen() {
   if (workouts.length === 0) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyTitle}>אין עדיין נתונים לניתוח</Text>
-        <Text style={styles.emptySubtitle}>סיים כמה אימונים ותוכל לראות כאן את ההתקדמות שלך</Text>
+        <EmptyState
+          icon="stats-chart-outline"
+          title="אין עדיין נתונים לניתוח"
+          subtitle="סיים כמה אימונים ותוכל לראות כאן את ההתקדמות שלך"
+          actionLabel="התחל אימון"
+          onAction={() => navigation.navigate('אימון')}
+        />
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 24, paddingTop: 56, paddingBottom: 32 }}>
-      <Text style={styles.pageTitle}>ניתוח והתקדמות</Text>
+      <Text style={common.pageTitle}>ניתוח והתקדמות</Text>
 
       {/* ===== 1. פעילות אימונים ===== */}
       <View style={[styles.card, { marginTop: 22 }]}>
@@ -377,11 +386,11 @@ export default function AnalysisScreen() {
                     {metric === 'intensity' ? (
                       <Text style={styles.barLabelInside}>{val + metricUnit}</Text>
                     ) : (
-                      <Text style={styles.barLabelAbove}>{val + metricUnit}</Text>
+                      denseChart ? null : <Text style={styles.barLabelAbove}>{val + metricUnit}</Text>
                     )}
                   </View>
                 </View>
-                <Text style={styles.barDate}>{p.date}</Text>
+                <Text style={styles.barDate}>{denseChart && i % 3 !== 0 ? ' ' : p.date}</Text>
               </View>
             );
           })}
@@ -445,14 +454,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centerContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { color: colors.warning, fontSize: 15, textAlign: 'center', writingDirection: 'rtl' },
-  emptyTitle: { color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: 8, textAlign: 'center', writingDirection: 'rtl' },
-  emptySubtitle: { color: colors.textDim, fontSize: 14, textAlign: 'center', writingDirection: 'rtl' },
 
-  pageTitle: { color: colors.text, fontSize: 22, fontWeight: '800', writingDirection: 'rtl' },
 
   card: { backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginTop: 22 },
   cardTitle: { color: colors.text, fontSize: 14, fontWeight: '700', writingDirection: 'rtl' },
-  cardSubtitle: { color: colors.textDim, fontSize: 11.5, marginTop: 2, marginBottom: 16, writingDirection: 'rtl' },
+  cardSubtitle: { color: colors.textDim, fontSize: 12, marginTop: 2, marginBottom: 16, writingDirection: 'rtl' },
 
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 
@@ -465,26 +471,26 @@ const styles = StyleSheet.create({
   navCircle: { width: touch.min, height: touch.min, borderRadius: touch.min / 2, borderWidth: 1, borderColor: colors.line, justifyContent: 'center', alignItems: 'center' },
   navCircleDisabled: { opacity: 0.35 },
   periodLabel: { color: colors.text, fontSize: 13, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
-  periodCount: { color: colors.textFaint, fontSize: 11, marginTop: 1, textAlign: 'center', writingDirection: 'rtl' },
+  periodCount: { color: colors.textFaint, fontSize: 12, marginTop: 1, textAlign: 'center', writingDirection: 'rtl' },
 
   weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
   dayDot: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: colors.line, backgroundColor: 'transparent' },
   dayDotActive: { backgroundColor: colors.chartPrimary, borderColor: colors.chartPrimary },
-  dayLetter: { color: colors.textFaint, fontSize: 10, textAlign: 'center', writingDirection: 'rtl' },
+  dayLetter: { color: colors.textFaint, fontSize: 11, textAlign: 'center', writingDirection: 'rtl' },
 
-  calHeaderText: { width: 38, textAlign: 'center', writingDirection: 'rtl', color: colors.textFaint, fontSize: 9.5, marginBottom: 6 },
+  calHeaderText: { width: 38, textAlign: 'center', writingDirection: 'rtl', color: colors.textFaint, fontSize: 11, marginBottom: 6 },
   calCell: { width: 38, height: 38, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
   calCellInactive: { borderWidth: 1, borderColor: colors.line },
   calCellActive: { borderWidth: 2, borderColor: colors.chartPrimary },
-  calCellText: { color: colors.textDim, fontSize: 11, textAlign: 'center', writingDirection: 'rtl' },
+  calCellText: { color: colors.textDim, fontSize: 12, textAlign: 'center', writingDirection: 'rtl' },
   calCellTextActive: { color: colors.text, fontWeight: '800' },
 
   avgBlock: { alignItems: 'center', gap: 10, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.line },
   avgBox: { alignItems: 'center', paddingVertical: 8, paddingHorizontal: 18, borderRadius: 8, backgroundColor: colors.chartPrimarySoft },
-  avgBoxLabel: { color: colors.textDim, fontSize: 11, textAlign: 'center', writingDirection: 'rtl' },
+  avgBoxLabel: { color: colors.textDim, fontSize: 12, textAlign: 'center', writingDirection: 'rtl' },
   avgBoxValue: { color: colors.text, fontSize: 17, fontWeight: '800', marginTop: 2, textAlign: 'center', writingDirection: 'rtl' },
   trendBadge: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
-  trendBadgeText: { fontSize: 11.5, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
+  trendBadgeText: { fontSize: 12, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
 
   segmentWide: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, gap: 4, marginTop: 22 },
   segmentWideBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: touch.min, borderRadius: 9 },
@@ -498,22 +504,22 @@ const styles = StyleSheet.create({
   barsRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
   barColumn: { height: 110, width: '100%', justifyContent: 'flex-end', alignItems: 'center' },
   bar: { width: '70%', borderRadius: 5, backgroundColor: colors.chartPrimary, alignItems: 'center', justifyContent: 'center' },
-  barLabelAbove: { position: 'absolute', top: -15, color: colors.textDim, fontSize: 8.5, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
-  barLabelInside: { color: colors.white, fontSize: 8, fontWeight: '600', textAlign: 'center', writingDirection: 'rtl', transform: [{ rotate: '-90deg' }] },
-  barDate: { color: colors.textFaint, fontSize: 8, marginTop: 6, textAlign: 'center', writingDirection: 'rtl' },
+  barLabelAbove: { position: 'absolute', top: -15, color: colors.textDim, fontSize: 10, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
+  barLabelInside: { color: colors.white, fontSize: 10, fontWeight: '600', textAlign: 'center', writingDirection: 'rtl', transform: [{ rotate: '-90deg' }] },
+  barDate: { color: colors.textFaint, fontSize: 10, marginTop: 6, textAlign: 'center', writingDirection: 'rtl' },
 
   legendRow: { flexDirection: 'row', gap: 14, marginBottom: 14 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 9, height: 9, borderRadius: 2 },
-  legendText: { color: colors.textDim, fontSize: 10.5, writingDirection: 'rtl' },
+  legendText: { color: colors.textDim, fontSize: 11, writingDirection: 'rtl' },
 
   restWorkRow: { gap: 6, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.line },
   restWorkDate: { color: colors.text, fontSize: 12.5, fontWeight: '700', writingDirection: 'rtl' },
   restWorkDuration: { color: colors.textDim, fontSize: 12.5, writingDirection: 'rtl' },
   stackedBar: { flexDirection: 'row', width: '100%', height: 10, borderRadius: 5, overflow: 'hidden' },
-  restWorkSubLabel: { color: colors.textFaint, fontSize: 10.5, writingDirection: 'rtl' },
+  restWorkSubLabel: { color: colors.textFaint, fontSize: 11, writingDirection: 'rtl' },
 
   showMoreButton: { marginTop: 12, minHeight: touch.min, justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: colors.line, alignItems: 'center' },
   showMoreText: { color: colors.textDim, fontSize: 12.5, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
-  moreNote: { color: colors.textFaint, fontSize: 11, marginTop: 10, writingDirection: 'rtl' },
+  moreNote: { color: colors.textFaint, fontSize: 12, marginTop: 10, writingDirection: 'rtl' },
 });
