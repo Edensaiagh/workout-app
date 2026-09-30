@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
   },
-  tabsRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  tabsRow: { flexDirection: 'row', gap: 8, marginBottom: 8, flexShrink: 0 },
   tab: {
     flex: 1,
     paddingVertical: 8,
@@ -224,9 +224,9 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: '#5b8cff' },
   tabText: { color: '#ccc', fontSize: 13, fontWeight: '600' },
   tabTextActive: { color: '#fff' },
-  // flexShrink: 0 - אחרת שורת הצ'יפים מתכווצת כשהרשימה הארוכה תופסת את המקום במודאל
-  chipsScroll: { flexGrow: 0, flexShrink: 0, marginBottom: 8 },
-  chipsContent: { gap: 8 },
+  // גובה קבוע, כדי ששורת הצ'יפים לא תתכווץ כשהרשימה הארוכה תופסת את המקום במודאל
+  chipsScroll: { height: 40, flexGrow: 0, flexShrink: 0, marginBottom: 8 },
+  chipsContent: { gap: 8, alignItems: 'center' },
   chip: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   chipCount: { color: '#8e8e93', fontSize: 11 },
   chipCountActive: { color: '#dbe5ff' },
   countText: { color: '#8e8e93', fontSize: 12, marginBottom: 4 },
-  list: { marginBottom: 12 },
+  list: { marginBottom: 12, flexGrow: 0, flexShrink: 1, minHeight: 120 },
   emptyText: { color: '#888', fontSize: 13, textAlign: 'center', paddingVertical: 16 },
   item: {
     flexDirection: 'row',
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   itemText: { color: '#eee', fontSize: 15 },
   itemTextEn: { color: '#8e8e93', fontSize: 12, marginTop: 2 },
   itemGroup: { color: '#8e8e93', fontSize: 11 },
-  actionsRow: { flexDirection: 'row', gap: 8 },
+  actionsRow: { flexDirection: 'row', gap: 8, flexShrink: 0 },
   cancelButton: {
     flex: 1,
     borderWidth: 1,
