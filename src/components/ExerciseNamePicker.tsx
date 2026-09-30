@@ -224,7 +224,8 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: '#5b8cff' },
   tabText: { color: '#ccc', fontSize: 13, fontWeight: '600' },
   tabTextActive: { color: '#fff' },
-  chipsScroll: { flexGrow: 0, marginBottom: 8 },
+  // flexShrink: 0 - אחרת שורת הצ'יפים מתכווצת כשהרשימה הארוכה תופסת את המקום במודאל
+  chipsScroll: { flexGrow: 0, flexShrink: 0, marginBottom: 8 },
   chipsContent: { gap: 8 },
   chip: {
     flexDirection: 'row',
