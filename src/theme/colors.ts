@@ -45,6 +45,7 @@ export const darkColors = {
   chartPrimary: '#5b8cff',
   chartPrimarySoft: 'rgba(91,140,255,0.12)',
   chartRest: '#ff9f0a',
+  onChartPrimary: '#ffffff', // טקסט על עמודות chartPrimary
 
   // ---- צבעי משנה לנתונים (גרפים, נקודות) ----
   teal: '#5fd0c0', // סטים / מנוחה
@@ -90,9 +91,10 @@ export const lightColors: Palette = {
   success: '#2fa04c',
   warning: '#c47600',
 
-  chartPrimary: '#4a76e0',
-  chartPrimarySoft: 'rgba(74,118,224,0.14)',
-  chartRest: '#d98400',
+  chartPrimary: '#e0900a',
+  chartPrimarySoft: 'rgba(224,144,10,0.16)',
+  chartRest: '#4a76e0',
+  onChartPrimary: '#141414', // בבהיר הצבע הראשי כתום, לכן טקסט כהה עליו
 
   teal: '#1c9484',
   info: '#3a78c2',

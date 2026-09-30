@@ -508,7 +508,7 @@ const createStyles = (colors: Palette) => StyleSheet.create({
   barColumn: { height: 110, width: '100%', justifyContent: 'flex-end', alignItems: 'center' },
   bar: { width: '70%', borderRadius: 5, backgroundColor: colors.chartPrimary, alignItems: 'center', justifyContent: 'center' },
   barLabelAbove: { position: 'absolute', top: -15, color: colors.textDim, fontSize: 10, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
-  barLabelInside: { color: colors.white, fontSize: 10, fontWeight: '600', textAlign: 'center', writingDirection: 'rtl', transform: [{ rotate: '-90deg' }] },
+  barLabelInside: { color: colors.onChartPrimary, fontSize: 10, fontWeight: '600', textAlign: 'center', writingDirection: 'rtl', transform: [{ rotate: '-90deg' }] },
   barDate: { color: colors.textFaint, fontSize: 10, marginTop: 6, textAlign: 'center', writingDirection: 'rtl' },
 
   legendRow: { flexDirection: 'row', gap: 14, marginBottom: 14 },
