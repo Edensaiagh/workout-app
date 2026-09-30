@@ -359,13 +359,6 @@ export default function WorkoutTrackerScreen() {
           >
             <Ionicons name="trash-outline" size={iconSize.md} color={colors.danger} />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[common.dangerButton, styles.finishButton]}
-            onPress={handleFinish}
-            disabled={saving}
-          >
-            <Text style={common.dangerButtonText}>{saving ? 'שומר...' : 'סיום אימון'}</Text>
-          </TouchableOpacity>
         </View>
         <View style={styles.clockGroup}>
           <View style={styles.clockDot} />
@@ -512,6 +505,15 @@ export default function WorkoutTrackerScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* סיום האימון - בתחתית המסך, רחוק מכפתורי הפעולה היומיומיים */}
+      <TouchableOpacity
+        style={[common.dangerButton, styles.finishButton]}
+        onPress={handleFinish}
+        disabled={saving}
+      >
+        <Text style={common.dangerButtonText}>{saving ? 'שומר...' : 'סיום אימון'}</Text>
+      </TouchableOpacity>
+
       <ExerciseNamePicker
         visible={nameEditorVisible}
         currentName={currentExercise.name}
@@ -560,7 +562,7 @@ const styles = StyleSheet.create({
   },
   timerLabel: { color: colors.textDim, fontSize: fontSize.xs, fontWeight: '600' },
   timer: { fontSize: fontSize.md, color: colors.text, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  finishButton: { paddingHorizontal: spacing.lg },
+  finishButton: { width: '100%', marginBottom: spacing.xl },
 
   exerciseCard: {
     backgroundColor: colors.surface,
@@ -720,7 +722,7 @@ const styles = StyleSheet.create({
   dotActive: { backgroundColor: colors.accent, width: 20, borderRadius: 4 },
   positionText: { color: colors.textDim, fontSize: fontSize.sm, fontWeight: '500' },
 
-  navRow: { flexDirection: 'row', gap: 10, marginTop: 10, marginBottom: spacing.xl },
+  navRow: { flexDirection: 'row', gap: 10, marginTop: 10, marginBottom: spacing.lg },
   navButton: {
     flex: 1,
     flexDirection: 'row',

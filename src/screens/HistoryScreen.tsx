@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   detailScreen: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg },
   detailHeader: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 48,
     paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
   manageLinkText: { color: colors.accent, fontSize: 12, fontWeight: '700' },
 
   // ---- מסך ניהול שיאים (אותו דפוס בדיוק כמו detailScreen/detailHeader) ----
-  manageHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6 },
+  manageHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 48, paddingBottom: 6 },
   manageTitle: { fontSize: 19, fontWeight: '800', color: colors.text },
   manageSub: { fontSize: 12, color: colors.textFaint, marginTop: 1, maxWidth: 260 },
   manageList: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
