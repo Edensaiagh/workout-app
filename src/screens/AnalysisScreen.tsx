@@ -234,7 +234,7 @@ export default function AnalysisScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator color={colors.accent} size="large" />
+        <ActivityIndicator color={colors.chartPrimary} size="large" />
       </View>
     );
   }
@@ -395,11 +395,11 @@ export default function AnalysisScreen() {
 
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
+            <View style={[styles.legendDot, { backgroundColor: colors.chartPrimary }]} />
             <Text style={styles.legendText}>עבודה</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.teal }]} />
+            <View style={[styles.legendDot, { backgroundColor: colors.chartRest }]} />
             <Text style={styles.legendText}>מנוחה</Text>
           </View>
         </View>
@@ -414,8 +414,8 @@ export default function AnalysisScreen() {
                 <Text style={styles.restWorkDuration}>סה"כ {item.durationMin} דק׳</Text>
               </View>
               <View style={styles.stackedBar}>
-                <View style={{ flex: workPct || 0.0001, backgroundColor: colors.accent }} />
-                <View style={{ flex: restPct || 0.0001, backgroundColor: colors.teal }} />
+                <View style={{ flex: workPct || 0.0001, backgroundColor: colors.chartPrimary }} />
+                <View style={{ flex: restPct || 0.0001, backgroundColor: colors.chartRest }} />
               </View>
               <View style={styles.rowBetween}>
                 <Text style={styles.restWorkSubLabel}>עבודה: {item.workMin} דק׳</Text>
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
 
   segmentSmall: { flexDirection: 'row', backgroundColor: colors.bg, borderRadius: 9, padding: 3, gap: 3 },
   segmentSmallBtn: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 7 },
-  segmentSmallBtnActive: { backgroundColor: colors.accent },
+  segmentSmallBtnActive: { backgroundColor: colors.chartPrimary },
   segmentSmallText: { color: colors.textDim, fontSize: 12, fontWeight: '700' },
   segmentSmallTextActive: { color: colors.onAccent },
 
@@ -469,18 +469,18 @@ const styles = StyleSheet.create({
 
   weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
   dayDot: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: colors.line, backgroundColor: 'transparent' },
-  dayDotActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  dayDotActive: { backgroundColor: colors.chartPrimary, borderColor: colors.chartPrimary },
   dayLetter: { color: colors.textFaint, fontSize: 10, textAlign: 'center', writingDirection: 'rtl' },
 
   calHeaderText: { width: 38, textAlign: 'center', writingDirection: 'rtl', color: colors.textFaint, fontSize: 9.5, marginBottom: 6 },
   calCell: { width: 38, height: 38, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
   calCellInactive: { borderWidth: 1, borderColor: colors.line },
-  calCellActive: { borderWidth: 2, borderColor: colors.accent },
+  calCellActive: { borderWidth: 2, borderColor: colors.chartPrimary },
   calCellText: { color: colors.textDim, fontSize: 11, textAlign: 'center', writingDirection: 'rtl' },
   calCellTextActive: { color: colors.text, fontWeight: '800' },
 
   avgBlock: { alignItems: 'center', gap: 10, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.line },
-  avgBox: { alignItems: 'center', paddingVertical: 8, paddingHorizontal: 18, borderRadius: 8, backgroundColor: colors.accentSoft },
+  avgBox: { alignItems: 'center', paddingVertical: 8, paddingHorizontal: 18, borderRadius: 8, backgroundColor: colors.chartPrimarySoft },
   avgBoxLabel: { color: colors.textDim, fontSize: 11, textAlign: 'center', writingDirection: 'rtl' },
   avgBoxValue: { color: colors.text, fontSize: 17, fontWeight: '800', marginTop: 2, textAlign: 'center', writingDirection: 'rtl' },
   trendBadge: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
 
   segmentWide: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, gap: 4, marginTop: 22 },
   segmentWideBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: touch.min, borderRadius: 9 },
-  segmentWideBtnActive: { backgroundColor: colors.accent },
+  segmentWideBtnActive: { backgroundColor: colors.chartPrimary },
   segmentWideText: { color: colors.textDim, fontSize: 13, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
   segmentWideTextActive: { color: colors.onAccent },
 
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
 
   barsRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
   barColumn: { height: 110, width: '100%', justifyContent: 'flex-end', alignItems: 'center' },
-  bar: { width: '70%', borderRadius: 5, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  bar: { width: '70%', borderRadius: 5, backgroundColor: colors.chartPrimary, alignItems: 'center', justifyContent: 'center' },
   barLabelAbove: { position: 'absolute', top: -15, color: colors.textDim, fontSize: 8.5, fontWeight: '700', textAlign: 'center', writingDirection: 'rtl' },
   barLabelInside: { color: colors.white, fontSize: 8, fontWeight: '600', textAlign: 'center', writingDirection: 'rtl', transform: [{ rotate: '-90deg' }] },
   barDate: { color: colors.textFaint, fontSize: 8, marginTop: 6, textAlign: 'center', writingDirection: 'rtl' },

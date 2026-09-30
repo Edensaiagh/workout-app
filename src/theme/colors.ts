@@ -32,8 +32,13 @@ export const colors = {
   dangerBorder: 'rgba(229,99,106,0.4)',
   dangerBg: '#241416',
   dangerText: '#f0c2c5',
-  success: '#34c759',
-  warning: '#ff9f0a',
+  success: '#5aa876',
+  warning: '#d9a066',
+
+  // ---- מסך הניתוח: כחול מעומעם לפעילות/עבודה, כתום מעומעם למנוחה ----
+  chartPrimary: '#6b88c9',
+  chartPrimarySoft: 'rgba(107,136,201,0.15)',
+  chartRest: '#d9a066',
 
   // ---- צבעי משנה לנתונים (גרפים, נקודות) ----
   teal: '#5fd0c0', // סטים / מנוחה
