@@ -58,7 +58,7 @@ function lerpColor(hex1: string, hex2: string, t: number) {
   return `rgb(${r}, ${g}, ${bl})`;
 }
 
-export function ShareCard({ data, expanded, onToggleExpand, appName = 'שם האפליקציה' }: ShareCardProps) {
+export function ShareCard({ data, expanded, onToggleExpand, appName = 'Bizi 365' }: ShareCardProps) {
   const visibleCount = expanded ? data.topExercises.length : Math.min(3, data.topExercises.length);
   const dense = visibleCount > 3;
   const rowFontSize = dense ? 9 : 10;

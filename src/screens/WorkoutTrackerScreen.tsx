@@ -247,7 +247,7 @@ export default function WorkoutTrackerScreen() {
         newPRsCount={completedNewRecords.length}
         newRecords={completedNewRecords}
         onStartNew={handleStartNew}
-        appName="שם האפליקציה" // TODO: להחליף לשם האמיתי
+        appName="Bizi 365"
       />
     );
   }
