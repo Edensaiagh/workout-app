@@ -3,7 +3,7 @@ import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/
 import { StatusBar } from 'expo-status-bar';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Image } from 'react-native';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -79,6 +79,11 @@ function Root() {
   if (initializing) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Image
+          source={require('./assets/logo.png')}
+          style={{ width: 120, height: 120, marginBottom: spacing.xl }}
+          accessibilityLabel="הלוגו של Bizi 365"
+        />
         <ActivityIndicator color={colors.accentText} size="large" />
       </View>
     );
@@ -93,7 +98,11 @@ function AppShell() {
   // בזמן שהגופן נטען מציגים רק רקע; אם הטעינה נכשלת ממשיכים עם גופן המערכת
   const [fontsLoaded, fontError] = useFonts(fontAssets);
   if (!fontsLoaded && !fontError) {
-    return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Image source={require('./assets/logo.png')} style={{ width: 120, height: 120 }} />
+      </View>
+    );
   }
 
   // ערכת נושא של הניווט - כל הצבעים מגיעים מ-src/theme/colors.ts

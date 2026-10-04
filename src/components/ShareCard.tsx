@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { darkColors as colors, Text } from '../theme';
 
@@ -74,9 +74,7 @@ export function ShareCard({ data, expanded, onToggleExpand, appName = 'Bizi 365'
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <View style={styles.logoBadge}>
-          <Ionicons name="flash" size={15} color={colors.onAccent} />
-        </View>
+        <Image source={require('../../assets/logo.png')} style={styles.logo} />
         <Text style={styles.appName}>{appName}</Text>
       </View>
 
@@ -162,10 +160,7 @@ const styles = StyleSheet.create({
   },
   // האפליקציה רצה ב-RTL כפוי: 'row' כבר מימין לשמאל, ובלי textAlign ידני הטקסט מיושר לימין
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logoBadge: {
-    width: 26, height: 26, borderRadius: 8, backgroundColor: AMBER,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  logo: { width: 34, height: 34 },
   appName: { fontSize: 13, fontWeight: '500', color: colors.text },
   subtitleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
   subtitleText: { fontSize: 12, color: colors.textDim },

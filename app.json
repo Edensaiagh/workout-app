@@ -33,7 +33,15 @@
           "iosUrlScheme": "com.googleusercontent.apps.779775783240-ntdchmq4rmi57gp08a5tpnqs2b3hs4m4"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#14161A",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ]
     ]
   }
 }
