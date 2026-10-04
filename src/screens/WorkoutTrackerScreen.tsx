@@ -308,7 +308,7 @@ export default function WorkoutTrackerScreen() {
 
         <Text style={styles.restOverlayLabel}>מנוחה</Text>
         <Text style={styles.restOverlaySubtitle}>
-          לפני הסט הבא — {currentExercise.name || 'התרגיל'}
+          לפני סט {currentExercise.sets.length + 1}
         </Text>
 
         <View style={styles.restRingWrap}>
