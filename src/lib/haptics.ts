@@ -23,22 +23,20 @@ export const haptics = {
   success: () => fire(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),
   /**
    * סיום מנוחה - רטט חזק וארוך, כזה שמרגישים גם בכיס.
-   * באנדרואיד: תבנית של שלושה פולסים ארוכים (המערכת מאפשרת שליטה באורך).
-   * באייפון אי אפשר לשלוט באורך הרטט, אז מפעילים כמה פולסים כבדים ברצף.
+   * באנדרואיד: תבנית של שני פולסים בינוניים (המערכת מאפשרת שליטה באורך).
+   * באייפון אי אפשר לשלוט באורך הרטט, אז מפעילים הצלחה + פולס בינוני אחד.
    */
   restDone: () => {
     if (Platform.OS === 'android') {
       try {
-        Vibration.vibrate([0, 500, 150, 500, 150, 700]);
+        Vibration.vibrate([0, 250, 120, 250]); // שני פולסים בינוניים
       } catch {
         // אין תמיכה - מתעלמים
       }
       return;
     }
     fire(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
-    [250, 500, 750].forEach((delay) =>
-      setTimeout(() => fire(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)), delay)
-    );
+    setTimeout(() => fire(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)), 250);
   },
   /** אזהרה - פעולה שנחסמה */
   warning: () => fire(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)),
