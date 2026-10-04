@@ -71,6 +71,8 @@ export default function WorkoutTrackerScreen() {
   }, [betweenExercisesStartedAt]);
   const [repsText, setRepsText] = useState('');
   const [weightText, setWeightText] = useState('');
+  const lastWeights = useRef<Map<string, number>>(new Map());
+  const [lastWeightsVersion, setLastWeightsVersion] = useState(0);
   const [setError, setSetError] = useState<string | null>(null);
   const [restRemaining, setRestRemaining] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -147,6 +149,14 @@ export default function WorkoutTrackerScreen() {
     setWeightText(lastSet ? String(lastSet.weight) : '');
   }, [currentExerciseIndex]);
 
+  // כשבוחרים תרגיל שעוד אין בו סטים באימון הזה - מציעים את המשקל מהאימון הקודם שלו.
+  // רץ אחרי האפקט שמאפס את הטופס (למעלה), ולכן ההצעה גוברת עליו.
+  useEffect(() => {
+    if (!currentExercise || currentExercise.sets.length > 0) return;
+    const remembered = lastWeights.current.get(currentExercise.name.trim().toLowerCase());
+    if (remembered !== undefined) setWeightText(String(remembered));
+  }, [currentExerciseIndex, currentExercise?.name, lastWeightsVersion]);
+
   // היסטוריית שמות תרגילים אישית - לטאב "ההיסטוריה שלי" בעורך שם התרגיל
   useEffect(() => {
     if (!activeWorkout) return;
@@ -166,6 +176,19 @@ export default function WorkoutTrackerScreen() {
           });
         });
         setPersonalHistory(names);
+
+        // המשקל האחרון שנרשם לכל תרגיל (לפי שם), מהאימון האחרון שבו הוא הופיע.
+        // האימונים ממוינים מהחדש לישן, אז ההופעה הראשונה היא האחרונה.
+        const weights = new Map<string, number>();
+        workouts.forEach((w) => {
+          w.exercises.forEach((ex) => {
+            const key = ex.name.trim().toLowerCase();
+            const last = ex.sets[ex.sets.length - 1];
+            if (key && last && !weights.has(key)) weights.set(key, last.weight);
+          });
+        });
+        lastWeights.current = weights;
+        setLastWeightsVersion((v) => v + 1);
       })
       .catch(() => {
         // ההיסטוריה היא נוחות בלבד - כשל בטעינה לא אמור להפריע לאימון
