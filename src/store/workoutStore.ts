@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { Workout, WorkoutExercise, WorkoutSet } from '../types/workout';
 import { exerciseVolume } from '../lib/setMath';
+import type { PlannedSet, WorkoutPlan } from '../types/plan';
 
 const REST_SECONDS_DEFAULT = 30;
 
@@ -22,9 +23,13 @@ interface WorkoutStore {
   // שעון "מנוחה בין תרגילים" (ספירה קדימה): מתי הסתיים הסט האחרון בתרגיל הקודם.
   // פעיל רק בתרגיל שעוד אין בו סטים, ונעצר (מתאפס) כשמוסיפים את הסט הראשון בו.
   betweenExercisesStartedAt: number | null;
+  // כשהאימון התחיל מאימון שמור: הסטים המתוכננים לכל תרגיל (לפי מזהה התרגיל באימון). לא נשמר ל-Firestore
+  plannedSets: Record<string, PlannedSet[]>;
+  planName: string | null;
 
   // אימון
   startWorkout: (userId: string) => void;
+  startWorkoutFromPlan: (userId: string, plan: WorkoutPlan) => void;
   finishWorkout: () => Workout | null;
   cancelWorkout: () => void;
 
@@ -32,6 +37,7 @@ interface WorkoutStore {
   setExerciseName: (name: string) => void;
   goToNextExercise: () => void;
   goToPrevExercise: () => void;
+  goToExercise: (index: number) => void; // קפיצה לכל תרגיל (אימון שלא לפי הסדר)
 
   // סטים
   // sides: רק בתרגיל דו-צדדי. אז reps נשמר כסכום שני הצדדים, weight כמקסימום משני המשקלים,
@@ -46,6 +52,17 @@ interface WorkoutStore {
 }
 
 const genId = () => Math.random().toString(36).slice(2, 10);
+
+// הזמן של הסט האחרון שבוצע בכל האימון (null אם עוד לא בוצע סט)
+function lastSetTimestamp(workout: Workout): number | null {
+  let latest: number | null = null;
+  workout.exercises.forEach((ex) =>
+    ex.sets.forEach((s) => {
+      if (latest === null || s.timestamp > latest) latest = s.timestamp;
+    })
+  );
+  return latest;
+}
 
 function startRestInternal(targetSeconds: number = REST_SECONDS_DEFAULT): RestState {
   return {
@@ -68,6 +85,8 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   currentExerciseIndex: 0,
   rest: idleRest,
   betweenExercisesStartedAt: null,
+  plannedSets: {},
+  planName: null,
 
   startWorkout: (userId) => {
     const firstExercise: WorkoutExercise = { id: genId(), name: '', sets: [] };
@@ -79,7 +98,32 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       exercises: [firstExercise],
       status: 'active',
     };
-    set({ activeWorkout: newWorkout, currentExerciseIndex: 0, rest: idleRest, betweenExercisesStartedAt: null });
+    set({ activeWorkout: newWorkout, currentExerciseIndex: 0, rest: idleRest, betweenExercisesStartedAt: null, plannedSets: {}, planName: null });
+  },
+
+  startWorkoutFromPlan: (userId, plan) => {
+    const exercises: WorkoutExercise[] = plan.exercises.map((pe) => ({ id: genId(), name: pe.name, sets: [] }));
+    if (exercises.length === 0) exercises.push({ id: genId(), name: '', sets: [] });
+    const plannedSets: Record<string, PlannedSet[]> = {};
+    plan.exercises.forEach((pe, i) => {
+      plannedSets[exercises[i].id] = pe.sets;
+    });
+    const newWorkout: Workout = {
+      id: genId(),
+      userId,
+      startedAt: Date.now(),
+      finishedAt: null,
+      exercises,
+      status: 'active',
+    };
+    set({
+      activeWorkout: newWorkout,
+      currentExerciseIndex: 0,
+      rest: idleRest,
+      betweenExercisesStartedAt: null,
+      plannedSets,
+      planName: plan.name,
+    });
   },
 
   finishWorkout: () => {
@@ -87,9 +131,11 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     if (!activeWorkout) return null;
 
     // מסננים תרגילים ריקים (בלי שם או בלי סטים) שנוצרו אבל לא מולאו
-    const cleanExercises = activeWorkout.exercises.filter(
-      (ex) => ex.name.trim().length > 0 && ex.sets.length > 0
-    );
+    // ומסדרים לפי הסדר שבו בפועל התחילו (אימון מתוכנית יכול להתבצע לא לפי הסדר),
+    // כדי שההיסטוריה והמנוחה בין התרגילים יוצגו נכון
+    const cleanExercises = activeWorkout.exercises
+      .filter((ex) => ex.name.trim().length > 0 && ex.sets.length > 0)
+      .sort((a, b) => a.sets[0].timestamp - b.sets[0].timestamp);
 
     // אם אחרי הסינון לא נשאר כלום - אין מה לשמור. לא מאפסים את האימון הפעיל,
     // כדי שהמשתמשת תוכל להמשיך ולהוסיף סטים ולנסות לסיים שוב.
@@ -109,12 +155,12 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       totalVolume,
     };
 
-    set({ activeWorkout: null, currentExerciseIndex: 0, rest: idleRest, betweenExercisesStartedAt: null });
+    set({ activeWorkout: null, currentExerciseIndex: 0, rest: idleRest, betweenExercisesStartedAt: null, plannedSets: {}, planName: null });
     return completedWorkout;
   },
 
   cancelWorkout: () => {
-    set({ activeWorkout: null, currentExerciseIndex: 0, rest: idleRest, betweenExercisesStartedAt: null });
+    set({ activeWorkout: null, currentExerciseIndex: 0, rest: idleRest, betweenExercisesStartedAt: null, plannedSets: {}, planName: null });
   },
 
   setExerciseName: (name) => {
@@ -126,14 +172,19 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     set({ activeWorkout: { ...activeWorkout, exercises } });
   },
 
-  goToNextExercise: () => {
+  // המנוחה בין תרגילים נמדדת מהסט האחרון שבוצע באימון כולו (בכל תרגיל), כך שהיא נכונה
+  // גם כשעוברים בין תרגילים לא לפי הסדר. השעון נעצר כשמוסיפים סט.
+  goToExercise: (index) => {
     const { activeWorkout, currentExerciseIndex } = get();
-    if (!activeWorkout) return;
+    if (!activeWorkout || index === currentExerciseIndex) return;
+    if (index < 0 || index >= activeWorkout.exercises.length) return;
+    const lastSetEndedAt = lastSetTimestamp(activeWorkout);
+    set({ currentExerciseIndex: index, rest: idleRest, betweenExercisesStartedAt: lastSetEndedAt });
+  },
 
-    // השעון מתחיל מסיום הסט האחרון בתרגיל שעוזבים, ורק אם התרגיל שעוברים אליו עוד ריק
-    const leaving = activeWorkout.exercises[currentExerciseIndex];
-    const lastSet = leaving?.sets[leaving.sets.length - 1];
-    const lastSetEndedAt = lastSet ? lastSet.timestamp : null;
+  goToNextExercise: () => {
+    const { activeWorkout, currentExerciseIndex, goToExercise } = get();
+    if (!activeWorkout) return;
 
     const isLast = currentExerciseIndex === activeWorkout.exercises.length - 1;
     if (isLast) {
@@ -142,22 +193,17 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
         activeWorkout: { ...activeWorkout, exercises: [...activeWorkout.exercises, newExercise] },
         currentExerciseIndex: currentExerciseIndex + 1,
         rest: idleRest, // אין מנוחה עם ספירה לאחור במעבר בין תרגילים
-        betweenExercisesStartedAt: lastSetEndedAt,
+        betweenExercisesStartedAt: lastSetTimestamp(activeWorkout),
       });
     } else {
-      const target = activeWorkout.exercises[currentExerciseIndex + 1];
-      set({
-        currentExerciseIndex: currentExerciseIndex + 1,
-        rest: idleRest,
-        betweenExercisesStartedAt: target.sets.length === 0 ? lastSetEndedAt : null,
-      });
+      goToExercise(currentExerciseIndex + 1);
     }
   },
 
   goToPrevExercise: () => {
-    const { currentExerciseIndex } = get();
+    const { currentExerciseIndex, goToExercise } = get();
     if (currentExerciseIndex === 0) return;
-    set({ currentExerciseIndex: currentExerciseIndex - 1, rest: idleRest, betweenExercisesStartedAt: null });
+    goToExercise(currentExerciseIndex - 1);
   },
 
   addSet: (reps, weight, sides) => {
@@ -182,11 +228,10 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       return { ok: false, error: 'המשקל לא יכול להיות שלילי' };
     }
 
-    // הסט הראשון בתרגיל: המנוחה שלפניו היא הזמן שעבר מסיום התרגיל הקודם
-    const isFirstSet = activeWorkout.exercises[currentExerciseIndex]?.sets.length === 0;
+    // הסט הראשון אחרי מעבר לתרגיל: המנוחה שלפניו היא הזמן שעבר מהסט האחרון שבוצע באימון
     const now = Date.now();
     const restBeforeSeconds =
-      isFirstSet && betweenExercisesStartedAt !== null
+      betweenExercisesStartedAt !== null
         ? Math.max(0, Math.round((now - betweenExercisesStartedAt) / 1000))
         : rest.lastCompletedSeconds;
 
