@@ -6,9 +6,13 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  Modal,
 } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
 import { saveWorkout, getUserWorkouts } from '../lib/workoutService';
+import { deletePlan, getCachedPlans, listPlans } from '../lib/planService';
+import PlansListView from './plans/PlansListView';
+import PlanEditorView from './plans/PlanEditorView';
 import { useRestSounds } from '../lib/sound';
 import { haptics } from '../lib/haptics';
 import { useAuth } from '../lib/authContext';
@@ -19,7 +23,8 @@ import { WorkoutCompleteView } from '../components/WorkoutCompleteView';
 import { StepperField } from '../components/StepperField';
 import { getExerciseKind } from '../constants/exerciseLibrary';
 import type { BrokenRecord } from '../lib/personalRecords';
-import { Workout } from '../types/workout';
+import { Workout, WorkoutExercise } from '../types/workout';
+import type { WorkoutPlan } from '../types/plan';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { fontSize, iconSize, radius, spacing, touch, Text, useTheme } from '../theme';
@@ -43,7 +48,11 @@ export default function WorkoutTrackerScreen() {
     currentExerciseIndex,
     rest,
     betweenExercisesStartedAt,
+    plannedSets,
+    planName,
     startWorkout,
+    startWorkoutFromPlan,
+    goToExercise,
     finishWorkout,
     cancelWorkout,
     setExerciseName,
@@ -82,6 +91,26 @@ export default function WorkoutTrackerScreen() {
   const [nameEditorVisible, setNameEditorVisible] = useState(false);
   const [personalHistory, setPersonalHistory] = useState<string[]>([]);
 
+  // אימונים שמורים (תוכניות) ומסך ההכנה שמוצג כשאין אימון פעיל
+  const [plans, setPlans] = useState<WorkoutPlan[]>([]);
+  const [planView, setPlanView] = useState<'home' | 'list' | 'editor'>('home');
+  const [editingPlan, setEditingPlan] = useState<WorkoutPlan | null>(null);
+  const [exerciseListVisible, setExerciseListVisible] = useState(false);
+
+  const refreshPlans = () => {
+    listPlans(userId).then(setPlans).catch(() => {});
+  };
+  useEffect(() => {
+    let cancelled = false;
+    getCachedPlans(userId).then((cached) => {
+      if (!cancelled) setPlans((current) => (current.length === 0 ? cached : current));
+    });
+    refreshPlans();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
   // מסך "אימון הושלם" - state מקומי מספיק (לא Zustand): ה-Tab.Navigator
   // משאיר מסכים מורכבים בזיכרון גם כשעוברים טאב, אז זה שורד מעבר בין טאבים
   // כל עוד לא סוגרים את האפליקציה לגמרי.
@@ -92,6 +121,15 @@ export default function WorkoutTrackerScreen() {
   const lastBeepedSecond = useRef<number | null>(null);
 
   const currentExercise = activeWorkout ? activeWorkout.exercises[currentExerciseIndex] : null;
+
+  // המשקל המתוכנן לסט במקום setIndex (מ-0) בתרגיל. מעבר לסטים המתוכננים - המשקל של הסט האחרון בתוכנית
+  function plannedWeightAt(ex: WorkoutExercise, setIndex: number): { right: number; left: number } | null {
+    const planned = plannedSets[ex.id];
+    if (!planned || planned.length === 0) return null;
+    const s = planned[Math.min(setIndex, planned.length - 1)];
+    return { right: s.weight, left: s.weightLeft ?? s.weight };
+  }
+  const plannedCount = currentExercise ? plannedSets[currentExercise.id]?.length ?? 0 : 0;
 
   // שעון האימון הכולל
   useEffect(() => {
@@ -150,6 +188,13 @@ export default function WorkoutTrackerScreen() {
     setSetError(null);
     const sets = currentExercise?.sets ?? [];
     const lastSet = sets[sets.length - 1];
+    // אימון מתוכנית: המשקל המתוכנן לסט הבא גובר
+    const planned = currentExercise ? plannedWeightAt(currentExercise, sets.length) : null;
+    if (planned) {
+      setWeightText(String(planned.right));
+      setWeightLeftText(String(planned.left));
+      return;
+    }
     setWeightText(lastSet ? String(lastSet.weightRight ?? lastSet.weight) : '');
     setWeightLeftText(lastSet ? String(lastSet.weightLeft ?? lastSet.weight) : '');
   }, [currentExerciseIndex]);
@@ -158,6 +203,7 @@ export default function WorkoutTrackerScreen() {
   // רץ אחרי האפקט שמאפס את הטופס (למעלה), ולכן ההצעה גוברת עליו.
   useEffect(() => {
     if (!currentExercise || currentExercise.sets.length > 0) return;
+    if (plannedSets[currentExercise.id]?.length) return; // יש משקל מתוכנן - הוא גובר
     const remembered = lastWeights.current.get(currentExercise.name.trim().toLowerCase());
     if (remembered !== undefined) {
       setWeightText(String(remembered.right));
@@ -167,7 +213,6 @@ export default function WorkoutTrackerScreen() {
 
   // היסטוריית שמות תרגילים אישית - לטאב "ההיסטוריה שלי" בעורך שם התרגיל
   useEffect(() => {
-    if (!activeWorkout) return;
     let cancelled = false;
     getUserWorkouts(userId)
       .then((workouts) => {
@@ -231,8 +276,10 @@ export default function WorkoutTrackerScreen() {
     setSetError(null);
     setRepsText('');
     setRepsLeftText('');
-    setWeightText(String(weight)); // מציעים אוטומטית את אותו משקל לסט הבא, ניתן לערוך
-    if (exerciseKind === 'unilateral') setWeightLeftText(String(weightLeft));
+    // אימון מתוכנית: מציעים את המשקל המתוכנן לסט הבא. אחרת - אותו משקל כמו הסט הזה. ניתן לערוך
+    const planned = currentExercise ? plannedWeightAt(currentExercise, currentExercise.sets.length + 1) : null;
+    setWeightText(String(planned ? planned.right : weight));
+    if (exerciseKind === 'unilateral') setWeightLeftText(String(planned ? planned.left : weightLeft));
   };
 
   const handleNext = () => {
@@ -317,6 +364,48 @@ export default function WorkoutTrackerScreen() {
   }
 
   if (!activeWorkout || !currentExercise) {
+    const suggestWeight = (name: string) => lastWeights.current.get(name.trim().toLowerCase());
+
+    if (planView === 'editor') {
+      return (
+        <PlanEditorView
+          userId={userId}
+          initial={editingPlan}
+          personalHistory={personalHistory}
+          suggestWeight={suggestWeight}
+          onClose={() => setPlanView(plans.length > 0 && editingPlan ? 'list' : 'home')}
+          onSaved={() => {
+            refreshPlans();
+            // השמירה כבר עדכנה את העותק המקומי, אז הרשימה מתעדכנת מיד גם בלי חיבור
+            getCachedPlans(userId).then(setPlans);
+            setPlanView('list');
+          }}
+        />
+      );
+    }
+
+    if (planView === 'list') {
+      return (
+        <PlansListView
+          plans={plans}
+          onBack={() => setPlanView('home')}
+          onStart={(plan) => {
+            setPlanView('home');
+            startWorkoutFromPlan(userId, plan);
+          }}
+          onEdit={(plan) => {
+            setEditingPlan(plan);
+            setPlanView('editor');
+          }}
+          onDelete={async (plan) => {
+            setPlans((current) => current.filter((p) => p.id !== plan.id));
+            await deletePlan(userId, plan.id);
+            if (plans.length <= 1) setPlanView('home');
+          }}
+        />
+      );
+    }
+
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.title}>מוכנים להתחיל?</Text>
@@ -324,7 +413,37 @@ export default function WorkoutTrackerScreen() {
           style={[common.primaryButton, styles.startButton]}
           onPress={() => startWorkout(userId)}
         >
-          <Text style={[common.primaryButtonText, styles.startButtonText]}>התחל אימון</Text>
+          <Text style={[common.primaryButtonText, styles.startButtonText]}>התחל אימון ריק</Text>
+        </TouchableOpacity>
+
+        {plans.length > 0 && (
+          <TouchableOpacity style={styles.optionCard} onPress={() => setPlanView('list')}>
+            <View style={[styles.optionIcon, { backgroundColor: colors.accentBadgeBg }]}>
+              <Ionicons name="albums-outline" size={iconSize.md} color={colors.teal} />
+            </View>
+            <View style={styles.optionTextCol}>
+              <Text style={styles.optionTitle}>בחירת אימון שמור</Text>
+              <Text style={styles.optionSub}>{plans.length === 1 ? 'אימון מוכן אחד' : `${plans.length} אימונים מוכנים`}</Text>
+            </View>
+            <Ionicons name="chevron-back" size={iconSize.sm} color={colors.textDim} />
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={styles.optionCard}
+          onPress={() => {
+            setEditingPlan(null);
+            setPlanView('editor');
+          }}
+        >
+          <View style={[styles.optionIcon, { backgroundColor: colors.accentBadgeBg }]}>
+            <Ionicons name="create-outline" size={iconSize.md} color={colors.info} />
+          </View>
+          <View style={styles.optionTextCol}>
+            <Text style={styles.optionTitle}>יצירת אימון עתידי</Text>
+            <Text style={styles.optionSub}>תרגילים, סטים ומשקלים מראש</Text>
+          </View>
+          <Ionicons name="chevron-back" size={iconSize.sm} color={colors.textDim} />
         </TouchableOpacity>
       </View>
     );
@@ -370,6 +489,7 @@ export default function WorkoutTrackerScreen() {
         <Text style={styles.restOverlayLabel}>מנוחה</Text>
         <Text style={styles.restOverlaySubtitle}>
           לפני סט {currentExercise.sets.length + 1}
+          {plannedCount > 0 && currentExercise.sets.length + 1 <= plannedCount ? ` מתוך ${plannedCount}` : ''}
         </Text>
 
         <View style={styles.restRingWrap}>
@@ -429,6 +549,15 @@ export default function WorkoutTrackerScreen() {
       {/* כותרת עליונה */}
       <View style={styles.header}>
         <View style={styles.headerActions}>
+          {totalExercises > 1 && (
+            <TouchableOpacity
+              style={common.iconButton}
+              onPress={() => setExerciseListVisible(true)}
+              accessibilityLabel="רשימת התרגילים"
+            >
+              <Ionicons name="list-outline" size={iconSize.md} color={colors.text} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[common.iconButton, common.iconButtonDanger]}
             onPress={handleCancelWorkout}
@@ -468,6 +597,21 @@ export default function WorkoutTrackerScreen() {
           </View>
           <Text style={styles.nameChevron}>‹</Text>
         </TouchableOpacity>
+
+        {plannedCount > 0 && (
+          <View style={styles.planRow}>
+            <Text style={styles.planRowText} numberOfLines={1}>
+              {planName ? `מתוך האימון "${planName}"` : 'מתוך האימון השמור'}
+            </Text>
+            <View style={styles.kindTag}>
+              <Text style={styles.kindTagText}>
+                {currentExercise.sets.length < plannedCount
+                  ? `סט ${currentExercise.sets.length + 1} מתוך ${plannedCount}`
+                  : `סט ${currentExercise.sets.length + 1} · מעבר לתוכנית`}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {currentExercise.sets.length === 0 && betweenExercisesStartedAt !== null && (
           <View style={styles.restDivider}>
@@ -628,6 +772,9 @@ export default function WorkoutTrackerScreen() {
           {exerciseKind === 'assisted' && (
             <Text style={styles.fieldHint}>פחות עזרה = תרגיל קשה יותר</Text>
           )}
+          {plannedCount > 0 && (
+            <Text style={styles.fieldHint}>המשקל מולא מהאימון השמור, אפשר לשנות.</Text>
+          )}
           <Text style={styles.fieldHint}>
             {rest.isActive
               ? 'אפשר להוסיף סט חדש רק לאחר סיום המנוחה'
@@ -695,6 +842,47 @@ export default function WorkoutTrackerScreen() {
         <Text style={common.dangerButtonText}>{saving ? 'שומר...' : 'סיום אימון'}</Text>
       </TouchableOpacity>
 
+      <Modal
+        visible={exerciseListVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setExerciseListVisible(false)}
+      >
+        <View style={styles.listBackdrop}>
+          <View style={styles.listSheet}>
+            <Text style={styles.listTitle}>התרגילים באימון</Text>
+            <Text style={styles.listSub}>אפשר לעבור לכל תרגיל, גם לא לפי הסדר. המנוחה בין התרגילים נמדדת מהסט האחרון שביצעת.</Text>
+            <ScrollView style={{ maxHeight: 380 }}>
+              {activeWorkout.exercises.map((ex, i) => {
+                const planned = plannedSets[ex.id]?.length ?? 0;
+                const done = ex.sets.length;
+                return (
+                  <TouchableOpacity
+                    key={ex.id}
+                    style={[styles.listRow, i === currentExerciseIndex && styles.listRowActive]}
+                    onPress={() => {
+                      setExerciseListVisible(false);
+                      goToExercise(i);
+                    }}
+                  >
+                    <View style={styles.setIndex}>
+                      <Text style={styles.setIndexText}>{i + 1}</Text>
+                    </View>
+                    <Text style={styles.listRowName} numberOfLines={1}>{ex.name || 'תרגיל ללא שם'}</Text>
+                    <Text style={styles.listRowStatus}>
+                      {planned > 0 ? `${done} מתוך ${planned} סטים` : `${done} סטים`}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity style={common.secondaryButton} onPress={() => setExerciseListVisible(false)}>
+              <Text style={common.secondaryButtonText}>סגירה</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <ExerciseNamePicker
         visible={nameEditorVisible}
         currentName={currentExercise.name}
@@ -726,6 +914,53 @@ const createStyles = (colors: Palette) => StyleSheet.create({
   title: { fontSize: 24, color: colors.text, marginBottom: spacing.xl, fontWeight: '600' },
   startButton: { paddingHorizontal: spacing.xxl + 8, minHeight: touch.buttonLarge },
   startButtonText: { fontSize: fontSize.lg + 1 },
+
+  optionCard: {
+    width: '88%',
+    minHeight: 78,
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+  },
+  optionIcon: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  optionTextCol: { flex: 1, gap: 2 },
+  optionTitle: { color: colors.text, fontSize: fontSize.lg - 1, fontWeight: '700' },
+  optionSub: { color: colors.textDim, fontSize: fontSize.sm },
+
+  planRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginBottom: spacing.sm },
+  planRowText: { color: colors.textDim, fontSize: fontSize.xs, flexShrink: 1 },
+
+  listBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  listSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+    gap: spacing.sm,
+  },
+  listTitle: { color: colors.text, fontSize: fontSize.lg, fontWeight: '700' },
+  listSub: { color: colors.textDim, fontSize: fontSize.xs, lineHeight: 18, marginBottom: spacing.xs },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: touch.button,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  listRowActive: { borderColor: colors.accentBadgeBorder, backgroundColor: colors.accentBadgeBg },
+  listRowName: { flex: 1, color: colors.text, fontSize: fontSize.md, fontWeight: '600' },
+  listRowStatus: { color: colors.textDim, fontSize: fontSize.xs },
 
   header: {
     flexDirection: 'row',
