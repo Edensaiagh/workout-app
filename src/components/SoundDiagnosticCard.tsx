@@ -3,10 +3,11 @@
 // על המסך מה הנגן מדווח. נועד לבודד האם הבעיה בצליל עצמו או בזרימת המנוחה.
 // להסיר אחרי שהצליל עובד.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { haptics } from '../lib/haptics';
+import { clearSoundLog, getSoundLog, subscribeSoundLog } from '../lib/sound';
 import { fontSize, radius, spacing, Text, useTheme } from '../theme';
 import type { Palette } from '../theme';
 
@@ -20,6 +21,7 @@ export function SoundDiagnosticCard() {
   const [modeResult, setModeResult] = useState('לא הופעל');
   const [lastAction, setLastAction] = useState('—');
   const [finishCount, setFinishCount] = useState(0);
+  const restLog = useSyncExternalStore(subscribeSoundLog, getSoundLog);
 
   useEffect(() => {
     if (status.didJustFinish) setFinishCount((n) => n + 1);
@@ -89,6 +91,23 @@ export function SoundDiagnosticCard() {
         {line('לולאה', status.loop)}
         {line('סיום ניגון (פעמים)', finishCount)}
       </View>
+      <View style={styles.logHeader}>
+        <Text style={styles.title}>יומן המנוחה האחרונה</Text>
+        <TouchableOpacity onPress={clearSoundLog}>
+          <Text style={styles.clear}>נקה</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.statusBox}>
+        {restLog.length === 0 ? (
+          <Text style={styles.line}>אין עדיין - תסיימי מנוחה באימון ותחזרי לכאן</Text>
+        ) : (
+          restLog.map((entry, i) => (
+            <Text key={i} style={styles.logLine}>
+              {entry}
+            </Text>
+          ))
+        )}
+      </View>
     </View>
   );
 }
@@ -110,4 +129,7 @@ const createStyles = (colors: Palette) =>
     flexOne: { flex: 1 },
     statusBox: { gap: 2 },
     line: { color: colors.textDim, fontSize: 12 },
+    logHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    clear: { color: colors.accentText, fontSize: 13, fontWeight: '700' },
+    logLine: { color: colors.textDim, fontSize: 11, textAlign: 'left', writingDirection: 'ltr' },
   });

@@ -17,6 +17,37 @@ const restDoneSource = require('../../assets/sounds/rest-done.wav');
 
 const MAX_RESETS_PER_REST = 2;
 
+// יומן אבחון זמני (מוצג ב-SoundDiagnosticCard במסך החשבון). להסיר יחד עם הכרטיס.
+let soundLog: string[] = [];
+const soundLogListeners = new Set<() => void>();
+
+function stamp(): string {
+  const d = new Date();
+  const p = (n: number, w = 2) => String(n).padStart(w, '0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
+}
+
+function logSound(message: string) {
+  soundLog = [...soundLog.slice(-11), `${stamp()} ${message}`];
+  soundLogListeners.forEach((l) => l());
+}
+
+export function getSoundLog(): string[] {
+  return soundLog;
+}
+
+export function clearSoundLog() {
+  soundLog = [];
+  soundLogListeners.forEach((l) => l());
+}
+
+export function subscribeSoundLog(listener: () => void): () => void {
+  soundLogListeners.add(listener);
+  return () => {
+    soundLogListeners.delete(listener);
+  };
+}
+
 let audioModeReady = false;
 
 async function ensureAudioMode() {
@@ -40,6 +71,9 @@ export function useRestSounds() {
   useEffect(() => {
     ensureAudioMode();
     const sub = donePlayer.addListener('playbackStatusUpdate', (status) => {
+      if (status.didJustFinish || status.playing) {
+        logSound(`status: state=${status.playbackState} playing=${status.playing} finished=${status.didJustFinish}`);
+      }
       if (!status.didJustFinish) return;
       try {
         donePlayer.pause(); // קודם עוצרים - כך האיפוס לא יכול להפעיל את הנגן מחדש
@@ -58,6 +92,7 @@ export function useRestSounds() {
   const primeDone = useCallback(() => {
     hasPlayedThisRest.current = false;
     resetsThisRest.current = 0;
+    logSound('rest started (primeDone)');
   }, []);
 
   const playTick = useCallback(() => {
@@ -65,12 +100,22 @@ export function useRestSounds() {
   }, []);
 
   const playDone = useCallback(() => {
-    if (hasPlayedThisRest.current) return;
+    if (hasPlayedThisRest.current) {
+      logSound('playDone ignored (already played this rest)');
+      return;
+    }
     hasPlayedThisRest.current = true;
+    logSound(
+      `playDone: before play loaded=${donePlayer.isLoaded} playing=${donePlayer.playing} t=${donePlayer.currentTime} vol=${donePlayer.volume} muted=${donePlayer.muted}`
+    );
     try {
       donePlayer.play();
-    } catch {
-      // לא מפילים את האפליקציה בגלל צליל
+      logSound('play() returned');
+      setTimeout(() => {
+        logSound(`300ms later: playing=${donePlayer.playing} t=${donePlayer.currentTime}`);
+      }, 300);
+    } catch (e) {
+      logSound(`play() threw: ${String(e)}`);
     }
   }, [donePlayer]);
 
