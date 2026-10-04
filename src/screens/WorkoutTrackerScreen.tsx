@@ -17,6 +17,7 @@ import { ConnectionBanner, OfflinePill } from '../components/ConnectionBanner';
 import ExerciseNamePicker from '../components/ExerciseNamePicker';
 import { WorkoutCompleteView } from '../components/WorkoutCompleteView';
 import { StepperField } from '../components/StepperField';
+import { getExerciseKind } from '../constants/exerciseLibrary';
 import type { BrokenRecord } from '../lib/personalRecords';
 import { Workout } from '../types/workout';
 import Svg, { Circle } from 'react-native-svg';
@@ -69,7 +70,8 @@ export default function WorkoutTrackerScreen() {
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, [betweenExercisesStartedAt]);
-  const [repsText, setRepsText] = useState('');
+  const [repsText, setRepsText] = useState(''); // חזרות (בדו-צדדי: ימין)
+  const [repsLeftText, setRepsLeftText] = useState(''); // חזרות שמאל, רק בתרגיל דו-צדדי
   const [weightText, setWeightText] = useState('');
   const lastWeights = useRef<Map<string, number>>(new Map());
   const [lastWeightsVersion, setLastWeightsVersion] = useState(0);
@@ -143,6 +145,7 @@ export default function WorkoutTrackerScreen() {
   // בכל מעבר לתרגיל אחר מאפסים את טופס הוספת הסט, ומציעים את המשקל האחרון שנרשם בו (אם יש)
   useEffect(() => {
     setRepsText('');
+    setRepsLeftText('');
     setSetError(null);
     const sets = currentExercise?.sets ?? [];
     const lastSet = sets[sets.length - 1];
@@ -202,7 +205,10 @@ export default function WorkoutTrackerScreen() {
     const reps = parseInt(repsText, 10);
     const weight = weightText === '' ? 0 : parseFloat(weightText);
 
-    const result = addSet(reps, weight);
+    const result =
+      exerciseKind === 'unilateral'
+        ? addSet(reps, weight, { right: reps, left: parseInt(repsLeftText, 10) })
+        : addSet(reps, weight);
     if (!result.ok) {
       setSetError(result.error);
       return;
@@ -210,6 +216,7 @@ export default function WorkoutTrackerScreen() {
     haptics.tap();
     setSetError(null);
     setRepsText('');
+    setRepsLeftText('');
     setWeightText(String(weight)); // מציעים אוטומטית את אותו משקל לסט הבא, ניתן לערוך
   };
 
@@ -310,13 +317,16 @@ export default function WorkoutTrackerScreen() {
 
   const totalExercises = activeWorkout.exercises.length;
 
+  const exerciseKind = getExerciseKind(currentExercise.name);
   const parsedReps = parseInt(repsText, 10);
+  const parsedRepsLeft = parseInt(repsLeftText, 10);
   const parsedWeight = weightText === '' ? 0 : parseFloat(weightText);
   const canAddSet =
     !rest.isActive &&
     repsText.trim() !== '' &&
     Number.isInteger(parsedReps) &&
     parsedReps > 0 &&
+    (exerciseKind !== 'unilateral' || (Number.isInteger(parsedRepsLeft) && parsedRepsLeft > 0)) &&
     Number.isFinite(parsedWeight) &&
     parsedWeight >= 0;
 
@@ -429,9 +439,16 @@ export default function WorkoutTrackerScreen() {
       {/* כרטיס התרגיל הנוכחי */}
       <View style={styles.exerciseCard}>
         <TouchableOpacity style={styles.nameRow} onPress={() => setNameEditorVisible(true)}>
-          <Text style={[styles.nameText, !currentExercise.name && styles.namePlaceholder]}>
-            {currentExercise.name || 'שם התרגיל (הקש לעריכה)'}
-          </Text>
+          <View style={styles.nameWithTag}>
+            <Text style={[styles.nameText, !currentExercise.name && styles.namePlaceholder, { flexShrink: 1 }]}>
+              {currentExercise.name || 'שם התרגיל (הקש לעריכה)'}
+            </Text>
+            {exerciseKind !== 'regular' && (
+              <View style={styles.kindTag}>
+                <Text style={styles.kindTagText}>{exerciseKind === 'unilateral' ? 'דו-צדדי' : 'עם עזרה'}</Text>
+              </View>
+            )}
+          </View>
           <Text style={styles.nameChevron}>‹</Text>
         </TouchableOpacity>
 
@@ -469,12 +486,25 @@ export default function WorkoutTrackerScreen() {
               <View style={styles.setData}>
                 <View style={styles.setChip}>
                   <Text style={styles.setChipVal}>{set.weight}</Text>
-                  <Text style={styles.setChipUnit}>ק״ג</Text>
+                  <Text style={styles.setChipUnit}>{exerciseKind === 'assisted' ? 'עזרה ק״ג' : 'ק״ג'}</Text>
                 </View>
-                <View style={styles.setChip}>
-                  <Text style={styles.setChipVal}>{set.reps}</Text>
-                  <Text style={styles.setChipUnit}>חזרות</Text>
-                </View>
+                {set.repsRight !== undefined && set.repsLeft !== undefined ? (
+                  <>
+                    <View style={[styles.setChip, { borderColor: colors.teal, borderWidth: 1 }]}>
+                      <Text style={styles.setChipVal}>{set.repsRight}</Text>
+                      <Text style={styles.setChipUnit}>ימין</Text>
+                    </View>
+                    <View style={[styles.setChip, { borderColor: colors.purple, borderWidth: 1 }]}>
+                      <Text style={styles.setChipVal}>{set.repsLeft}</Text>
+                      <Text style={styles.setChipUnit}>שמאל</Text>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.setChip}>
+                    <Text style={styles.setChipVal}>{set.reps}</Text>
+                    <Text style={styles.setChipUnit}>חזרות</Text>
+                  </View>
+                )}
               </View>
               <TouchableOpacity
                 style={styles.deleteSetButton}
@@ -500,27 +530,56 @@ export default function WorkoutTrackerScreen() {
         <View style={styles.addSetForm}>
           <View style={styles.fieldRow}>
             <StepperField
-              label="משקל (ק״ג)"
+              label={exerciseKind === 'assisted' ? 'עזרה במכונה (ק״ג)' : 'משקל (ק״ג)'}
               value={weightText}
               onChangeText={setWeightText}
               step={2.5}
               decimals={2}
               keyboardType="decimal-pad"
               borderColor={colors.info}
-              minusLabel="הורדת משקל"
-              plusLabel="הוספת משקל"
+              minusLabel={exerciseKind === 'assisted' ? 'הורדת עזרה' : 'הורדת משקל'}
+              plusLabel={exerciseKind === 'assisted' ? 'הוספת עזרה' : 'הוספת משקל'}
             />
-            <StepperField
-              label="חזרות"
-              value={repsText}
-              onChangeText={setRepsText}
-              step={1}
-              keyboardType="number-pad"
-              borderColor={colors.teal}
-              minusLabel="הורדת חזרה"
-              plusLabel="הוספת חזרה"
-            />
+            {exerciseKind !== 'unilateral' && (
+              <StepperField
+                label="חזרות"
+                value={repsText}
+                onChangeText={setRepsText}
+                step={1}
+                keyboardType="number-pad"
+                borderColor={colors.teal}
+                minusLabel="הורדת חזרה"
+                plusLabel="הוספת חזרה"
+              />
+            )}
           </View>
+          {exerciseKind === 'unilateral' && (
+            <View style={styles.fieldRow}>
+              <StepperField
+                label="חזרות - ימין"
+                value={repsText}
+                onChangeText={setRepsText}
+                step={1}
+                keyboardType="number-pad"
+                borderColor={colors.teal}
+                minusLabel="הורדת חזרה בצד ימין"
+                plusLabel="הוספת חזרה בצד ימין"
+              />
+              <StepperField
+                label="חזרות - שמאל"
+                value={repsLeftText}
+                onChangeText={setRepsLeftText}
+                step={1}
+                keyboardType="number-pad"
+                borderColor={colors.purple}
+                minusLabel="הורדת חזרה בצד שמאל"
+                plusLabel="הוספת חזרה בצד שמאל"
+              />
+            </View>
+          )}
+          {exerciseKind === 'assisted' && (
+            <Text style={styles.fieldHint}>פחות עזרה = תרגיל קשה יותר</Text>
+          )}
           <Text style={styles.fieldHint}>
             {rest.isActive
               ? 'אפשר להוסיף סט חדש רק לאחר סיום המנוחה'
@@ -654,6 +713,16 @@ const createStyles = (colors: Palette) => StyleSheet.create({
   },
   nameText: { color: colors.text, fontSize: fontSize.xl, fontWeight: '700' },
   namePlaceholder: { color: colors.textDim, fontWeight: '400' },
+  nameWithTag: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  kindTag: {
+    backgroundColor: colors.accentBadgeBg,
+    borderWidth: 1,
+    borderColor: colors.accentBadgeBorder,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  kindTagText: { color: colors.accentText, fontSize: 11, fontWeight: '700' },
   nameChevron: { color: colors.textDim, fontSize: 18 },
 
   emptyState: { textAlign: 'center', color: colors.textDim, fontSize: fontSize.sm, paddingVertical: 10 },

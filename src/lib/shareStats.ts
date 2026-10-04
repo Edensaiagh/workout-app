@@ -1,4 +1,5 @@
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { exerciseVolume } from './setMath';
 import { db } from './firebase';
 import { Workout } from '../types/workout';
 import { ExerciseVolume, ShareCardData } from '../components/ShareCard';
@@ -49,7 +50,7 @@ export function buildShareCardDataFromWorkout(
 ): ShareCardData {
   const exercises: ExerciseVolume[] = workout.exercises.map((ex) => ({
     name: ex.name,
-    volumeKg: ex.sets.reduce((sum, s) => sum + s.weight * s.reps, 0),
+    volumeKg: exerciseVolume(ex.name, ex.sets),
   }));
 
   const totalVolumeKg = workout.totalVolume ?? exercises.reduce((sum, ex) => sum + ex.volumeKg, 0);

@@ -6,20 +6,29 @@
 // (personalRecords). לכן לא משנים שמות של תרגילים קיימים, רק מוסיפים חדשים.
 //
 // רק תרגילים עם משקל וחזרות נמצאים כאן. חימום אירובי ותרגילים ללא משקל (הליכון, אופני כושר,
-// ברפי ועוד) ייכנסו בעתיד עם סוג מדידה נפרד. תרגילי עזרה שמורידים משקל (מתח בעזרת מכונה) לא נכנסו
-// בכוונה, כי הם הופכים את משמעות המשקל ומבלבלים את מעקב השיאים.
+// ברפי ועוד) ייכנסו בעתיד עם סוג מדידה נפרד.
+//
+// סוגי תרגיל (ExerciseKind), נקבעים רק כאן, לפי השם:
+//   regular    - משקל וחזרות (ברירת מחדל)
+//   unilateral - דו-צדדי: סט אחד עם חזרות נפרדות לימין ולשמאל ומשקל משותף
+//   assisted   - עם עזרה (מתח בעזרת מכונה): "המשקל" הוא העזרה, ופחות עזרה = תרגיל קשה יותר
+// תרגיל שהוקלד חופשי (לא מהספרייה) הוא תמיד regular.
+// להוספת סוג לתרגיל חדש: מוסיפים אותו כאיבר שלישי בשורה, למשל ['סקוואט בולגרי', 'Bulgarian Split Squat', 'unilateral'].
 
 export const MUSCLE_GROUPS = ['חזה', 'גב', 'כתפיים', 'ידיים', 'רגליים', 'ישבן', 'בטן'] as const;
 
 export type MuscleGroup = (typeof MUSCLE_GROUPS)[number];
 
+export type ExerciseKind = 'regular' | 'unilateral' | 'assisted';
+
 export interface LibraryExercise {
   name: string; // שם בעברית - נשמר באימון ומשמש כמפתח לשיאים
   en: string; // שם באנגלית - הצגה וחיפוש בלבד
   group: MuscleGroup;
+  kind: ExerciseKind;
 }
 
-type RawEntry = readonly [name: string, en: string];
+type RawEntry = readonly [name: string, en: string, kind?: ExerciseKind];
 
 const RAW: Record<MuscleGroup, RawEntry[]> = {
   חזה: [
@@ -38,6 +47,7 @@ const RAW: Record<MuscleGroup, RawEntry[]> = {
     ['שכיבות סמיכה עם רגליים מוגבהות', 'Decline Push-Up'],
     ['שכיבות סמיכה על ברכיים', 'Knee Push-Up'],
     ['מקבילים לחזה', 'Chest Dip'],
+    ['מקבילים בעזרת מכונה', 'Assisted Dip', 'assisted'],
     ['פולאובר עם משקולת', 'Dumbbell Pullover'],
   ],
   גב: [
@@ -46,13 +56,15 @@ const RAW: Record<MuscleGroup, RawEntry[]> = {
     ['משיכת מוט לחזה בהחזקה צרה', 'Close-Grip Lat Pulldown'],
     ['חתירה בכבל', 'Seated Cable Row'],
     ['חתירה עם מוט', 'Barbell Row'],
-    ['חתירה עם משקולת יד', 'Dumbbell Row'],
+    ['חתירה עם משקולת יד', 'Dumbbell Row', 'unilateral'],
     ['חתירה במכונה', 'Machine Row'],
     ['חתירה בשיפוע', 'T-Bar Row'],
     ['חתירה על ספסל בשיפוע', 'Chest-Supported Row'],
     ['מתח', 'Pull-Up'],
     ['מתח בהחזקה הפוכה', 'Chin-Up'],
     ['מתח בהחזקה רחבה', 'Wide-Grip Pull-Up'],
+    ['מתח בעזרת מכונה', 'Assisted Pull-Up', 'assisted'],
+    ['מתח בהחזקה הפוכה בעזרת מכונה', 'Assisted Chin-Up', 'assisted'],
     ['משיכה ישרת ידיים בכבל', 'Straight-Arm Pulldown'],
     ['היפראקסטנשן', 'Back Extension'],
     ['גוד מורנינג', 'Good Morning'],
@@ -83,13 +95,13 @@ const RAW: Record<MuscleGroup, RawEntry[]> = {
     ['תלתלי פטיש', 'Hammer Curl'],
     ['תלתלי יד בכבל', 'Cable Curl'],
     ['תלתלי יד על ספסל מטיף', 'Preacher Curl'],
-    ['תלתלי ריכוז', 'Concentration Curl'],
+    ['תלתלי ריכוז', 'Concentration Curl', 'unilateral'],
     ['פשיטת מרפק (טרייספס)', 'Triceps Extension'],
     ['פשיטת מרפק בכבל', 'Triceps Pushdown'],
     ['פשיטת מרפק מעל הראש', 'Overhead Triceps Extension'],
     ['פשיטת מרפק עם חבל', 'Rope Pushdown'],
     ['מקבילים לטרייספס', 'Triceps Dip'],
-    ['קיק בק לטרייספס', 'Triceps Kickback'],
+    ['קיק בק לטרייספס', 'Triceps Kickback', 'unilateral'],
     ['כפיפת כף יד', 'Wrist Curl'],
     ['פשיטת כף יד', 'Reverse Wrist Curl'],
   ],
@@ -97,20 +109,20 @@ const RAW: Record<MuscleGroup, RawEntry[]> = {
     ['סקוואט', 'Squat'],
     ['סקוואט קדמי', 'Front Squat'],
     ['סקוואט גביע', 'Goblet Squat'],
-    ['סקוואט בולגרי', 'Bulgarian Split Squat'],
+    ['סקוואט בולגרי', 'Bulgarian Split Squat', 'unilateral'],
     ['סקוואט במכונת סמית', 'Smith Machine Squat'],
     ['לחיצת רגליים', 'Leg Press'],
     ['פשיטת ברך', 'Leg Extension'],
     ['כפיפת ברך', 'Leg Curl'],
     ['הרחקת רגל בישיבה', 'Seated Hip Abduction'],
     ['קירוב רגליים בישיבה', 'Seated Hip Adduction'],
-    ['לאנג׳ (צעד סכין)', 'Lunge'],
-    ['לאנג׳ הליכה', 'Walking Lunge'],
-    ['לאנג׳ אחורי', 'Reverse Lunge'],
-    ['לאנג׳ צידי', 'Lateral Lunge'],
+    ['לאנג׳ (צעד סכין)', 'Lunge', 'unilateral'],
+    ['לאנג׳ הליכה', 'Walking Lunge', 'unilateral'],
+    ['לאנג׳ אחורי', 'Reverse Lunge', 'unilateral'],
+    ['לאנג׳ צידי', 'Lateral Lunge', 'unilateral'],
     ['דדליפט רומני', 'Romanian Deadlift'],
     ['דדליפט רגליים ישרות', 'Stiff-Leg Deadlift'],
-    ['עליית מדרגה', 'Step-Up'],
+    ['עליית מדרגה', 'Step-Up', 'unilateral'],
     ['הרמת עקבים בעמידה', 'Standing Calf Raise'],
     ['הרמת עקבים בישיבה', 'Seated Calf Raise'],
   ],
@@ -119,18 +131,18 @@ const RAW: Record<MuscleGroup, RawEntry[]> = {
     ['הרמת אגן עם מוט', 'Barbell Hip Thrust'],
     ['הרמת אגן על ספסל', 'Bench Hip Thrust'],
     ['גשר ישבן', 'Glute Bridge'],
-    ['גשר על רגל אחת', 'Single-Leg Glute Bridge'],
+    ['גשר על רגל אחת', 'Single-Leg Glute Bridge', 'unilateral'],
     ['בעיטת ישבן בכבל', 'Cable Glute Kickback'],
     ['בעיטה לאחור על ארבע', 'Donkey Kick'],
     ['הרחקת ירך בכבל', 'Cable Hip Abduction'],
     ['סווינג עם קטלבל', 'Kettlebell Swing'],
     ['סקוואט סומו', 'Sumo Squat'],
     ['דדליפט סומו', 'Sumo Deadlift'],
-    ['עליית מדרגה גבוהה', 'High Step-Up'],
+    ['עליית מדרגה גבוהה', 'High Step-Up', 'unilateral'],
   ],
   בטן: [
     ['פלאנק', 'Plank'],
-    ['פלאנק צידי', 'Side Plank'],
+    ['פלאנק צידי', 'Side Plank', 'unilateral'],
     ['פלאנק עם נגיעת כתף', 'Plank Shoulder Tap'],
     ['כפיפות בטן', 'Crunch'],
     ['כפיפות בטן בכבל', 'Cable Crunch'],
@@ -148,8 +160,17 @@ const RAW: Record<MuscleGroup, RawEntry[]> = {
 };
 
 export const EXERCISE_LIBRARY: LibraryExercise[] = MUSCLE_GROUPS.flatMap((group) =>
-  RAW[group].map(([name, en]) => ({ name, en, group })),
+  RAW[group].map(([name, en, kind]) => ({ name, en, group, kind: kind ?? 'regular' })),
 );
+
+const KIND_BY_NAME: Record<string, ExerciseKind> = Object.fromEntries(
+  EXERCISE_LIBRARY.map((e) => [e.name, e.kind]),
+);
+
+/** סוג התרגיל לפי שמו (אחרי trim). תרגיל שלא בספרייה הוא תמיד regular. */
+export function getExerciseKind(name: string): ExerciseKind {
+  return KIND_BY_NAME[name.trim()] ?? 'regular';
+}
 
 /** כל השמות העבריים - משמש את personalRecords כדי לדעת אילו תרגילים נספרים לשיאים. */
 export const EXERCISE_NAMES: string[] = EXERCISE_LIBRARY.map((e) => e.name);

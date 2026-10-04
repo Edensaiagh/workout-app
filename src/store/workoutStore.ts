@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import { Workout, WorkoutExercise, WorkoutSet } from '../types/workout';
+import { exerciseVolume } from '../lib/setMath';
 
 const REST_SECONDS_DEFAULT = 30;
 
@@ -33,7 +34,8 @@ interface WorkoutStore {
   goToPrevExercise: () => void;
 
   // סטים
-  addSet: (reps: number, weight: number) => { ok: true } | { ok: false; error: string };
+  // sides: רק בתרגיל דו-צדדי. אז reps נשמר כסכום שני הצדדים, ו-repsRight/repsLeft נשמרים בנפרד
+  addSet: (reps: number, weight: number, sides?: { right: number; left: number }) => { ok: true } | { ok: false; error: string };
   deleteSet: (setId: string) => void;
 
   // מנוחה
@@ -95,7 +97,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     }
 
     const totalVolume = cleanExercises.reduce((sum, ex) => {
-      return sum + ex.sets.reduce((exSum, s) => exSum + s.weight * s.reps, 0);
+      return sum + exerciseVolume(ex.name, ex.sets);
     }, 0);
 
     const completedWorkout: Workout = {
@@ -157,11 +159,17 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     set({ currentExerciseIndex: currentExerciseIndex - 1, rest: idleRest, betweenExercisesStartedAt: null });
   },
 
-  addSet: (reps, weight) => {
+  addSet: (reps, weight, sides) => {
     const { activeWorkout, currentExerciseIndex, rest, betweenExercisesStartedAt } = get();
     if (!activeWorkout) return { ok: false, error: 'אין אימון פעיל' };
 
-    if (!Number.isFinite(reps) || reps <= 0 || !Number.isInteger(reps)) {
+    if (sides) {
+      const valid = (n: number) => Number.isInteger(n) && n > 0;
+      if (!valid(sides.right) || !valid(sides.left)) {
+        return { ok: false, error: 'הזן מספר חזרות תקין (גדול מ-0) לימין ולשמאל' };
+      }
+      reps = sides.right + sides.left;
+    } else if (!Number.isFinite(reps) || reps <= 0 || !Number.isInteger(reps)) {
       return { ok: false, error: 'הזן מספר חזרות תקין (גדול מ-0)' };
     }
     if (!Number.isFinite(weight) || weight < 0) {
@@ -182,6 +190,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       weight,
       restBeforeSeconds,
       timestamp: now,
+      ...(sides ? { repsRight: sides.right, repsLeft: sides.left } : {}),
     };
 
     const exercises = activeWorkout.exercises.map((ex, i) =>

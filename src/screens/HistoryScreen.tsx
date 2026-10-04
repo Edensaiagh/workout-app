@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { EmptyState } from '../components/EmptyState';
 import { LoadErrorState } from '../components/LoadErrorState';
 import { useIsOffline } from '../lib/network';
+import { exerciseVolume } from '../lib/setMath';
+import { getExerciseKind } from '../constants/exerciseLibrary';
 import { getPendingWorkouts } from '../lib/localBackup';
 import { fontSize, iconSize, radius, spacing, touch, Text, useTheme } from '../theme';
 import type { Palette } from '../theme';
@@ -33,7 +35,7 @@ const CHIPS_PER_CARD = 3;
 function calcVolume(workout: Workout): number {
   if (typeof workout.totalVolume === 'number') return workout.totalVolume;
   return workout.exercises.reduce(
-    (sum, ex) => sum + ex.sets.reduce((s, set) => s + set.reps * set.weight, 0),
+    (sum, ex) => sum + exerciseVolume(ex.name, ex.sets),
     0
   );
 }
@@ -290,10 +292,19 @@ export default function HistoryScreen() {
                   <View key={name} style={[styles.prRow, i === 0 && styles.prRowFirst]}>
                     <Text style={styles.prExerciseName}>{name}</Text>
                     <View style={styles.prValues}>
-                      <Text style={styles.prValNum}>{r.maxWeight.toLocaleString('he-IL')} ק״ג</Text>
-                      <Text style={styles.prValSub}>
-                        {r.maxReps} חזרות · נפח {r.maxSessionVolume.toLocaleString('he-IL')}
-                      </Text>
+                      {getExerciseKind(name) === 'assisted' ? (
+                        <>
+                          <Text style={styles.prValNum}>עזרה {(r.minAssistWeight ?? 0).toLocaleString('he-IL')} ק״ג</Text>
+                          <Text style={styles.prValSub}>{r.maxReps} חזרות</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={styles.prValNum}>{r.maxWeight.toLocaleString('he-IL')} ק״ג</Text>
+                          <Text style={styles.prValSub}>
+                            {r.maxReps} חזרות · נפח {r.maxSessionVolume.toLocaleString('he-IL')}
+                          </Text>
+                        </>
+                      )}
                     </View>
                   </View>
                 );
@@ -463,7 +474,16 @@ export default function HistoryScreen() {
                 </View>
               )}
               <View style={styles.exBlock}>
-                <Text style={styles.exName}>{ex.name}</Text>
+                <View style={styles.exNameRow}>
+                  <Text style={styles.exName}>{ex.name}</Text>
+                  {getExerciseKind(ex.name) !== 'regular' && (
+                    <View style={styles.kindTag}>
+                      <Text style={styles.kindTagText}>
+                        {getExerciseKind(ex.name) === 'unilateral' ? 'דו-צדדי' : 'עם עזרה'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 {ex.sets.map((set, i) => (
                   <React.Fragment key={set.id}>
                     {i > 0 && set.restBeforeSeconds !== null && (
@@ -476,10 +496,22 @@ export default function HistoryScreen() {
                       <View style={styles.setNum}>
                         <Text style={styles.setNumText}>{i + 1}</Text>
                       </View>
-                      <Text style={styles.setDetail}>
-                        <Text style={styles.bold}>{set.reps}</Text> חזרות{' · '}
-                        <Text style={styles.bold}>{set.weight}</Text> ק"ג
-                      </Text>
+                      {set.repsRight !== undefined && set.repsLeft !== undefined ? (
+                        <Text style={styles.setDetail}>
+                          <Text style={styles.bold}>{set.weight}</Text> ק"ג{' · '}ימין <Text style={styles.bold}>{set.repsRight}</Text>
+                          {' · '}שמאל <Text style={styles.bold}>{set.repsLeft}</Text>
+                        </Text>
+                      ) : getExerciseKind(ex.name) === 'assisted' ? (
+                        <Text style={styles.setDetail}>
+                          עזרה <Text style={styles.bold}>{set.weight}</Text> ק"ג{' · '}
+                          <Text style={styles.bold}>{set.reps}</Text> חזרות
+                        </Text>
+                      ) : (
+                        <Text style={styles.setDetail}>
+                          <Text style={styles.bold}>{set.reps}</Text> חזרות{' · '}
+                          <Text style={styles.bold}>{set.weight}</Text> ק"ג
+                        </Text>
+                      )}
                     </View>
                   </React.Fragment>
                 ))}
@@ -540,9 +572,18 @@ export default function HistoryScreen() {
                     <View style={{ flex: 1 }}>
                       <Text style={styles.manageExName}>{name}</Text>
                       <Text style={styles.manageExVals}>
-                        <Text style={styles.bold}>{r.maxWeight.toLocaleString('he-IL')}</Text> ק"ג{' · '}
-                        <Text style={styles.bold}>{r.maxReps}</Text> חזרות{' · '}
-                        <Text style={styles.bold}>{r.maxSessionVolume.toLocaleString('he-IL')}</Text> נפח/אימון
+                        {getExerciseKind(name) === 'assisted' ? (
+                          <>
+                            עזרה <Text style={styles.bold}>{(r.minAssistWeight ?? 0).toLocaleString('he-IL')}</Text> ק"ג{' · '}
+                            <Text style={styles.bold}>{r.maxReps}</Text> חזרות
+                          </>
+                        ) : (
+                          <>
+                            <Text style={styles.bold}>{r.maxWeight.toLocaleString('he-IL')}</Text> ק"ג{' · '}
+                            <Text style={styles.bold}>{r.maxReps}</Text> חזרות{' · '}
+                            <Text style={styles.bold}>{r.maxSessionVolume.toLocaleString('he-IL')}</Text> נפח/אימון
+                          </>
+                        )}
                       </Text>
                     </View>
                     <TouchableOpacity style={[common.iconButton, common.iconButtonDanger]} onPress={() => setConfirmDeleteName(name)}>
@@ -691,6 +732,16 @@ const createStyles = (colors: Palette) => StyleSheet.create({
   exName: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 10, textAlign: 'center', alignSelf: 'center' },
   restBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 3 },
   restBetweenText: { color: colors.textFaint, fontSize: 12 },
+  exNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  kindTag: {
+    backgroundColor: colors.accentBadgeBg,
+    borderWidth: 1,
+    borderColor: colors.accentBadgeBorder,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 20,
+  },
+  kindTagText: { color: colors.accentText, fontSize: 11, fontWeight: '700' },
   betweenRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginVertical: spacing.xs },
   betweenLine: { flex: 1, height: 1, backgroundColor: colors.accentBadgeBorder },
   betweenPill: {

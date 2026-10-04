@@ -2,8 +2,10 @@
 
 export interface WorkoutSet {
   id: string;
-  reps: number;
-  weight: number; // בק"ג
+  reps: number; // בתרגיל דו-צדדי: סך החזרות משני הצדדים (repsRight + repsLeft), כדי שחישובי נפח וסיכומים יישארו נכונים
+  weight: number; // בק"ג. בתרגיל עם עזרה: כמה עזרה הוגדרה במכונה (פחות עזרה = קשה יותר)
+  repsRight?: number; // רק בתרגיל דו-צדדי
+  repsLeft?: number; // רק בתרגיל דו-צדדי
   restBeforeSeconds: number | null; // כמה זמן נחו לפני הסט הזה (null לסט הראשון בתרגיל)
   timestamp: number;
 }

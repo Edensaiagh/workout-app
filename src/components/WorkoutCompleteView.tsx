@@ -34,11 +34,14 @@ const KIND_LABEL: Record<BrokenRecord['kind'], string> = {
   weight: 'שיא משקל',
   reps: 'שיא חזרות',
   volume: 'שיא נפח באימון',
+  assist: 'שיא עזרה נמוכה',
 };
 
 function formatRecordValue(r: BrokenRecord): string {
   const n = r.value.toLocaleString('he-IL');
-  return r.kind === 'reps' ? `${n} חזרות` : `${n} ק״ג`;
+  if (r.kind === 'reps') return `${n} חזרות`;
+  if (r.kind === 'assist') return `עזרה ${n} ק״ג`;
+  return `${n} ק״ג`;
 }
 
 function formatWorkoutDate(ms: number): string {
@@ -347,7 +350,7 @@ export function WorkoutCompleteView({
                       <Text style={styles.recordValue}>{formatRecordValue(r)}</Text>
                       {r.delta !== null && (
                         <View style={styles.recordDelta}>
-                          <Ionicons name="arrow-up" size={12} color={colors.teal} />
+                          <Ionicons name={r.kind === 'assist' ? 'arrow-down' : 'arrow-up'} size={12} color={colors.teal} />
                           <Text style={styles.recordDeltaText}>{r.delta.toLocaleString('he-IL')}</Text>
                         </View>
                       )}

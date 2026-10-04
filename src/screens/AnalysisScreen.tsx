@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { EmptyState } from '../components/EmptyState';
 import { LoadErrorState } from '../components/LoadErrorState';
 import { useIsOffline } from '../lib/network';
+import { setVolume } from '../lib/setMath';
 import { iconSize, radius, spacing, touch, Text, useTheme } from '../theme';
 import type { Palette } from '../theme';
 
@@ -63,7 +64,7 @@ function workoutDurationStats(w: Workout) {
 }
 function workoutMetrics(w: Workout) {
   let sets = 0, reps = 0, volume = 0;
-  w.exercises.forEach((ex) => ex.sets.forEach((s) => { sets += 1; reps += s.reps; volume += s.reps * s.weight; }));
+  w.exercises.forEach((ex) => ex.sets.forEach((s) => { sets += 1; reps += s.reps; volume += setVolume(ex.name, s); }));
   return { sets, reps, volume };
 }
 

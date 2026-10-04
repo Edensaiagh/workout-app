@@ -10,14 +10,16 @@
 
 import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { db } from './firebase';
-import { EXERCISE_NAMES } from '../constants/exerciseLibrary';
+import { EXERCISE_NAMES, getExerciseKind } from '../constants/exerciseLibrary';
+import { exerciseVolume } from './setMath';
 import { Workout } from '../types/workout';
 
 const PERSONAL_RECORDS_COLLECTION = 'personalRecords';
 
 export interface ExerciseRecord {
-  maxWeight: number; // ק"ג, המשקל הגבוה ביותר שהורם בסט בודד
-  maxReps: number; // מספר החזרות הגבוה ביותר בסט בודד
+  maxWeight: number; // ק"ג, המשקל הגבוה ביותר שהורם בסט בודד (בתרגיל עם עזרה: 0, ראו minAssistWeight)
+  maxReps: number; // מספר החזרות הגבוה ביותר בסט בודד (בדו-צדדי: לפי הצד החלש בסט, כלומר min(ימין, שמאל))
+  minAssistWeight?: number; // רק בתרגיל עם עזרה: העזרה הנמוכה ביותר (בק"ג) שבה בוצע סט. פחות = טוב יותר
   maxSessionVolume: number; // הנפח (משקל × חזרות, סכום כל הסטים) הגבוה ביותר לתרגיל הזה באימון בודד
   updatedAt: number; // Date.now() של העדכון האחרון - לשימוש עתידי (מיון/הצגה), לא חובה היום
 }
@@ -27,9 +29,9 @@ export type PersonalRecordsMap = Record<string, ExerciseRecord>;
 /** שיא בודד שנשבר באימון - להצגה במסך "אימון הושלם" */
 export interface BrokenRecord {
   exercise: string;
-  kind: 'weight' | 'reps' | 'volume';
-  value: number; // הערך החדש (ק"ג / חזרות / נפח בק"ג)
-  delta: number | null; // כמה עלה על השיא הקודם; null = זה השיא הראשון בתרגיל
+  kind: 'weight' | 'reps' | 'volume' | 'assist';
+  value: number; // הערך החדש (ק"ג / חזרות / נפח בק"ג / עזרה בק"ג)
+  delta: number | null; // כמה השתפר מהשיא הקודם (תמיד חיובי; ב-assist: כמה פחות עזרה); null = זה השיא הראשון בתרגיל
 }
 
 export interface PersonalRecordsUpdate {
@@ -41,7 +43,9 @@ const NO_RECORDS: PersonalRecordsUpdate = { count: 0, records: [] };
 
 const LIBRARY_EXERCISES_SET = new Set(EXERCISE_NAMES);
 
-function emptyRecord(): Omit<ExerciseRecord, 'updatedAt'> {
+type WorkoutRecord = Omit<ExerciseRecord, 'updatedAt'>;
+
+function emptyRecord(): WorkoutRecord {
   return { maxWeight: 0, maxReps: 0, maxSessionVolume: 0 };
 }
 
@@ -59,30 +63,50 @@ export async function getPersonalRecords(userId: string): Promise<PersonalRecord
  * תרגיל יכול תיאורטית להופיע כמה פעמים באותו אימון (למשל אם עברו הלאה וחזרו
  * אליו) - במקרה כזה מאחדים: מקס' על המשקל/חזרות, וסכום על הנפח.
  */
-function recordsFromWorkout(workout: Workout): Record<string, Omit<ExerciseRecord, 'updatedAt'>> {
-  const result: Record<string, Omit<ExerciseRecord, 'updatedAt'>> = {};
+function recordsFromWorkout(workout: Workout): Record<string, WorkoutRecord> {
+  const result: Record<string, WorkoutRecord> = {};
 
   workout.exercises.forEach((ex) => {
     const name = ex.name.trim();
     if (!LIBRARY_EXERCISES_SET.has(name)) return; // תרגיל חופשי שלא ברשימה - לא נספר
     if (ex.sets.length === 0) return;
 
+    const kind = getExerciseKind(name);
     let maxWeight = 0;
     let maxReps = 0;
-    let sessionVolume = 0;
+    let minAssist: number | undefined;
     ex.sets.forEach((s) => {
-      if (s.weight > maxWeight) maxWeight = s.weight;
-      if (s.reps > maxReps) maxReps = s.reps;
-      sessionVolume += s.weight * s.reps;
+      if (kind === 'assisted') {
+        // "המשקל" הוא העזרה: שיא = הכי פחות עזרה, ולא הכי הרבה משקל
+        if (minAssist === undefined || s.weight < minAssist) minAssist = s.weight;
+      } else if (s.weight > maxWeight) {
+        maxWeight = s.weight;
+      }
+      // דו-צדדי: שיא חזרות לפי הצד החלש (כמה חזרות עשית בשני הצדדים)
+      const reps =
+        kind === 'unilateral' && s.repsRight !== undefined && s.repsLeft !== undefined
+          ? Math.min(s.repsRight, s.repsLeft)
+          : s.reps;
+      if (reps > maxReps) maxReps = reps;
     });
+    const sessionVolume = exerciseVolume(name, ex.sets); // 0 בתרגיל עם עזרה
 
     const existing = result[name];
     if (existing) {
       existing.maxWeight = Math.max(existing.maxWeight, maxWeight);
       existing.maxReps = Math.max(existing.maxReps, maxReps);
       existing.maxSessionVolume += sessionVolume;
+      if (minAssist !== undefined) {
+        existing.minAssistWeight =
+          existing.minAssistWeight === undefined ? minAssist : Math.min(existing.minAssistWeight, minAssist);
+      }
     } else {
-      result[name] = { maxWeight, maxReps, maxSessionVolume: sessionVolume };
+      result[name] = {
+        maxWeight,
+        maxReps,
+        maxSessionVolume: sessionVolume,
+        ...(minAssist !== undefined ? { minAssistWeight: minAssist } : {}),
+      };
     }
   });
 
@@ -114,10 +138,23 @@ export async function updatePersonalRecordsForWorkout(userId: string, workout: W
     const weightBroken = incoming.maxWeight > prev.maxWeight;
     const repsBroken = incoming.maxReps > prev.maxReps;
     const volumeBroken = incoming.maxSessionVolume > prev.maxSessionVolume;
+    // עזרה נמוכה יותר = שיא (השיא הראשון בתרגיל נחשב גם הוא)
+    const assistBroken =
+      incoming.minAssistWeight !== undefined &&
+      (prev.minAssistWeight === undefined || incoming.minAssistWeight < prev.minAssistWeight);
 
-    if (!weightBroken && !repsBroken && !volumeBroken) return;
+    if (!weightBroken && !repsBroken && !volumeBroken && !assistBroken) return;
 
     const deltaOf = (next: number, before: number) => (before > 0 ? next - before : null);
+    if (assistBroken) {
+      const before = prev.minAssistWeight;
+      brokenRecords.push({
+        exercise: name,
+        kind: 'assist',
+        value: incoming.minAssistWeight as number,
+        delta: before === undefined ? null : before - (incoming.minAssistWeight as number),
+      });
+    }
     if (weightBroken) {
       brokenRecords.push({ exercise: name, kind: 'weight', value: incoming.maxWeight, delta: deltaOf(incoming.maxWeight, prev.maxWeight) });
     }
@@ -132,6 +169,14 @@ export async function updatePersonalRecordsForWorkout(userId: string, workout: W
       maxWeight: Math.max(prev.maxWeight, incoming.maxWeight),
       maxReps: Math.max(prev.maxReps, incoming.maxReps),
       maxSessionVolume: Math.max(prev.maxSessionVolume, incoming.maxSessionVolume),
+      ...(incoming.minAssistWeight !== undefined || prev.minAssistWeight !== undefined
+        ? {
+            minAssistWeight: Math.min(
+              incoming.minAssistWeight ?? Infinity,
+              prev.minAssistWeight ?? Infinity
+            ),
+          }
+        : {}),
       updatedAt: now,
     };
   });
