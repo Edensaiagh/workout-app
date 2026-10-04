@@ -18,6 +18,9 @@ interface WorkoutStore {
   activeWorkout: Workout | null;
   currentExerciseIndex: number;
   rest: RestState;
+  // שעון "מנוחה בין תרגילים" (ספירה קדימה): מתי הסתיים הסט האחרון בתרגיל הקודם.
+  // פעיל רק בתרגיל שעוד אין בו סטים, ונעצר (מתאפס) כשמוסיפים את הסט הראשון בו.
+  betweenExercisesStartedAt: number | null;
 
   // אימון
   startWorkout: (userId: string) => void;
@@ -61,6 +64,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   activeWorkout: null,
   currentExerciseIndex: 0,
   rest: idleRest,
+  betweenExercisesStartedAt: null,
 
   startWorkout: (userId) => {
     const firstExercise: WorkoutExercise = { id: genId(), name: '', sets: [] };
@@ -72,7 +76,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       exercises: [firstExercise],
       status: 'active',
     };
-    set({ activeWorkout: newWorkout, currentExerciseIndex: 0, rest: idleRest });
+    set({ activeWorkout: newWorkout, currentExerciseIndex: 0, rest: idleRest, betweenExercisesStartedAt: null });
   },
 
   finishWorkout: () => {
@@ -102,12 +106,12 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       totalVolume,
     };
 
-    set({ activeWorkout: null, currentExerciseIndex: 0, rest: idleRest });
+    set({ activeWorkout: null, currentExerciseIndex: 0, rest: idleRest, betweenExercisesStartedAt: null });
     return completedWorkout;
   },
 
   cancelWorkout: () => {
-    set({ activeWorkout: null, currentExerciseIndex: 0, rest: idleRest });
+    set({ activeWorkout: null, currentExerciseIndex: 0, rest: idleRest, betweenExercisesStartedAt: null });
   },
 
   setExerciseName: (name) => {
@@ -123,29 +127,38 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     const { activeWorkout, currentExerciseIndex } = get();
     if (!activeWorkout) return;
 
+    // השעון מתחיל מסיום הסט האחרון בתרגיל שעוזבים, ורק אם התרגיל שעוברים אליו עוד ריק
+    const leaving = activeWorkout.exercises[currentExerciseIndex];
+    const lastSet = leaving?.sets[leaving.sets.length - 1];
+    const lastSetEndedAt = lastSet ? lastSet.timestamp : null;
+
     const isLast = currentExerciseIndex === activeWorkout.exercises.length - 1;
     if (isLast) {
-      // תרגיל "מסתיים" בפועל רק כאן - בפעם הראשונה שעוברים הלאה ממנו לתרגיל חדש
-      // (לכן זו הפעם היחידה שמפעילים מנוחה אוטומטית בין תרגילים)
       const newExercise: WorkoutExercise = { id: genId(), name: '', sets: [] };
       set({
         activeWorkout: { ...activeWorkout, exercises: [...activeWorkout.exercises, newExercise] },
         currentExerciseIndex: currentExerciseIndex + 1,
-        rest: idleRest, // אין יותר מנוחה אוטומטית במעבר בין תרגילים
+        rest: idleRest, // אין מנוחה עם ספירה לאחור במעבר בין תרגילים
+        betweenExercisesStartedAt: lastSetEndedAt,
       });
     } else {
-      set({ currentExerciseIndex: currentExerciseIndex + 1, rest: idleRest });
+      const target = activeWorkout.exercises[currentExerciseIndex + 1];
+      set({
+        currentExerciseIndex: currentExerciseIndex + 1,
+        rest: idleRest,
+        betweenExercisesStartedAt: target.sets.length === 0 ? lastSetEndedAt : null,
+      });
     }
   },
 
   goToPrevExercise: () => {
     const { currentExerciseIndex } = get();
     if (currentExerciseIndex === 0) return;
-    set({ currentExerciseIndex: currentExerciseIndex - 1, rest: idleRest });
+    set({ currentExerciseIndex: currentExerciseIndex - 1, rest: idleRest, betweenExercisesStartedAt: null });
   },
 
   addSet: (reps, weight) => {
-    const { activeWorkout, currentExerciseIndex, rest } = get();
+    const { activeWorkout, currentExerciseIndex, rest, betweenExercisesStartedAt } = get();
     if (!activeWorkout) return { ok: false, error: 'אין אימון פעיל' };
 
     if (!Number.isFinite(reps) || reps <= 0 || !Number.isInteger(reps)) {
@@ -155,12 +168,20 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       return { ok: false, error: 'המשקל לא יכול להיות שלילי' };
     }
 
+    // הסט הראשון בתרגיל: המנוחה שלפניו היא הזמן שעבר מסיום התרגיל הקודם
+    const isFirstSet = activeWorkout.exercises[currentExerciseIndex]?.sets.length === 0;
+    const now = Date.now();
+    const restBeforeSeconds =
+      isFirstSet && betweenExercisesStartedAt !== null
+        ? Math.max(0, Math.round((now - betweenExercisesStartedAt) / 1000))
+        : rest.lastCompletedSeconds;
+
     const newSet: WorkoutSet = {
       id: genId(),
       reps,
       weight,
-      restBeforeSeconds: rest.lastCompletedSeconds,
-      timestamp: Date.now(),
+      restBeforeSeconds,
+      timestamp: now,
     };
 
     const exercises = activeWorkout.exercises.map((ex, i) =>
@@ -170,6 +191,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     set({
       activeWorkout: { ...activeWorkout, exercises },
       rest: startRestInternal(), // מנוחה מתחילה אוטומטית אחרי כל סט
+      betweenExercisesStartedAt: null,
     });
 
     return { ok: true };
