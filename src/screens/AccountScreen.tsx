@@ -4,7 +4,7 @@ import { View, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollVie
 import { useAuth } from '../lib/authContext';
 import { logOut } from '../lib/auth';
 import { haptics } from '../lib/haptics';
-import { SoundDiagnosticCard } from '../components/SoundDiagnosticCard';
+import { SoundVibrationLab } from '../components/SoundVibrationLab';
 import { fontSize, radius, spacing, touch, Text, useTheme } from '../theme';
 import type { Palette, ThemeMode } from '../theme';
 
@@ -69,7 +69,7 @@ export default function AccountScreen() {
         <Text style={styles.themeHint}>״לפי המכשיר״ עוקב אחרי ההגדרה של הטלפון.</Text>
       </View>
 
-      <SoundDiagnosticCard />
+      <SoundVibrationLab />
 
       <TouchableOpacity style={[common.dangerButton, styles.signOut]} onPress={handleSignOut} disabled={signingOut}>
         {signingOut ? (
