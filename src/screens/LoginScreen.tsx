@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   View,
+  Image,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -71,6 +72,11 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <Image
+          source={require('../../assets/logo.png')}
+          style={styles.logo}
+          accessibilityLabel="הלוגו של Bizi 365"
+        />
         <Text style={styles.title}>Bizi 365</Text>
         <Text style={styles.subtitle}>
           {mode === 'signIn' ? 'התחבר כדי להמשיך' : 'צור חשבון חדש'}
@@ -163,6 +169,7 @@ export default function LoginScreen() {
 const createStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   scrollContent: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
+  logo: { width: 120, height: 120, alignSelf: 'center', marginBottom: spacing.md },
   title: { fontSize: 30, fontWeight: '800', color: colors.text, textAlign: 'center' },
   subtitle: { fontSize: fontSize.md, color: colors.textDim, textAlign: 'center', marginTop: 6, marginBottom: spacing.xxl },
   form: { gap: spacing.xs },
