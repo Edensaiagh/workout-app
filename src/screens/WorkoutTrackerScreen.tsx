@@ -112,7 +112,8 @@ export default function WorkoutTrackerScreen() {
 
       setRestRemaining(remaining);
 
-      if (remaining <= 5 && lastBeepedSecond.current !== remaining) {
+      // רטט קל בכל אחת מ-3 השניות האחרונות (הטבעת נשארת אדומה מ-5 שניות, זה רק הרטט)
+      if (remaining <= 3 && lastBeepedSecond.current !== remaining) {
         lastBeepedSecond.current = remaining;
         playTick();
       }
