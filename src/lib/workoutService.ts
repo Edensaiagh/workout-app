@@ -8,7 +8,7 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
-import * as Network from 'expo-network';
+import { isDefinitelyOffline } from './network';
 import { db } from './firebase';
 import { saveWorkoutLocally, syncPendingWorkouts, removePendingWorkout } from './localBackup';
 import { updatePersonalRecordsForWorkout, BrokenRecord, PersonalRecordsUpdate } from './personalRecords';
@@ -39,15 +39,6 @@ async function pushWorkoutToCloud(workout: Workout): Promise<PersonalRecordsUpda
 // בשני המקרים הסנכרון יתבצע אחר כך (syncPendingWorkoutsToCloud), וזה בטוח לכתיבה כפולה:
 // המסמך נכתב לפי workout.id, כך שכתיבה חוזרת רק מחליפה אותו באותו תוכן.
 const CLOUD_SAVE_TIMEOUT_MS = 10000;
-
-async function isDefinitelyOffline(): Promise<boolean> {
-  try {
-    const state = await Network.getNetworkStateAsync();
-    return state.isConnected === false || state.isInternetReachable === false;
-  } catch {
-    return false; // לא הצלחנו לבדוק - ננסה לשמור לענן כרגיל
-  }
-}
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
