@@ -52,7 +52,7 @@ export default function WorkoutTrackerScreen() {
     completeRestNaturally,
   } = useWorkoutStore();
 
-  const { playTick, playDone } = useRestSounds();
+  const { playTick, playDone, primeDone } = useRestSounds();
 
   const [elapsed, setElapsed] = useState(0);
   const [repsText, setRepsText] = useState('');
@@ -88,6 +88,7 @@ export default function WorkoutTrackerScreen() {
     if (!rest.isActive || rest.startedAt === null) return;
 
     lastBeepedSecond.current = null;
+    primeDone(); // מכינים את נגן הצליל מראש, כדי שיתחיל מיד בסיום המנוחה
     // מגן מפני צפצוף חוזר: אם הטיק הבא רץ לפני שה-re-render עם isActive=false
     // הספיק להגיע (למשל כשהאפליקציה הייתה ברקע), לא נרצה לקרוא ל-playDone שוב.
     let doneFired = false;

@@ -1,17 +1,21 @@
 // src/lib/sound.ts
-// צלילי מנוחה. צליל סיום המנוחה מנוגן פעם אחת בלבד, מנגן יחיד (useAudioPlayer) שה-hook משחרר
-// לבד ביציאה מהמסך.
+// צלילי מנוחה. צליל סיום המנוחה מנוגן פעם אחת בלבד, בנגן חד־פעמי:
+// נוצר מראש כשהמנוחה מתחילה (primeDone), מנגן פעם אחת בסיום (playDone), ומשוחרר מיד אחר כך.
 //
 // למה זה לא חוזר על הבאג הישן (ציפצופים שלא נפסקים, בעיה #8 בקובץ ההתקדמות):
-// - אין ניגון בכל שנייה: ה-tick של 5 השניות האחרונות נשאר רטט קל בלבד, והצליל רק בסיום.
-// - אין seekTo לפני play (זה גרם לדיליי ב-bridge, ראו CHANGELOG): האיפוס לתחילת הקובץ קורה
-//   רק אחרי didJustFinish, ובינתיים קריאה חוזרת ל-playDone מתעלמת מעצמה.
+// הגרסה הקודמת של הקובץ הזה איפסה את הנגן עם seekTo(0) אחרי didJustFinish. נגן שסיים ומקבל seek
+// לתחילה יכול להתחיל לנגן מחדש, מה שמפעיל שוב didJustFinish, וחוזר חלילה - לולאה אינסופית.
+// כאן אין seekTo בכלל, אין שימוש חוזר בנגן, ו-loop מכובה במפורש, ולכן אין דרך להיכנס ללולאה.
+// בנוסף יש טיימר ביטחון שמשחרר את הנגן גם אם didJustFinish לא הגיע.
 
 import { useCallback, useEffect, useRef } from 'react';
-import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import type { AudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 
 const restDoneSource = require('../../assets/sounds/rest-done.wav');
+
+const RELEASE_FAILSAFE_MS = 3000; // הצליל באורך 0.4 שניות; אחרי 3 שניות משחררים בכל מקרה
 
 let audioModeReady = false;
 
@@ -28,38 +32,82 @@ async function ensureAudioMode() {
   }
 }
 
+function createDonePlayer(): AudioPlayer | null {
+  try {
+    const player = createAudioPlayer(restDoneSource);
+    player.loop = false;
+    return player;
+  } catch {
+    return null;
+  }
+}
+
+function releasePlayer(player: AudioPlayer) {
+  try {
+    player.pause();
+  } catch {
+    // כבר שוחרר - מתעלמים
+  }
+  try {
+    player.remove();
+  } catch {
+    // כבר שוחרר - מתעלמים
+  }
+}
+
 export function useRestSounds() {
-  const donePlayer = useAudioPlayer(restDoneSource);
-  const isPlayingDone = useRef(false);
+  // נגן מוכן שעוד לא ניגן (נוצר כשהמנוחה מתחילה, כדי שהצליל יתחיל מיד בסיומה)
+  const primed = useRef<AudioPlayer | null>(null);
+  const hasPlayedThisRest = useRef(false);
 
   useEffect(() => {
     ensureAudioMode();
-    const sub = donePlayer.addListener('playbackStatusUpdate', (status) => {
-      if (status.didJustFinish) {
-        isPlayingDone.current = false;
-        try {
-          donePlayer.seekTo(0); // מכינים את הניגון הבא רק אחרי שהנוכחי באמת הסתיים
-        } catch {
-          // אם האיפוס נכשל, הניגון הבא פשוט יתחיל מהמקום שבו עצר
-        }
+    return () => {
+      if (primed.current) {
+        releasePlayer(primed.current);
+        primed.current = null;
       }
-    });
-    return () => sub.remove();
-  }, [donePlayer]);
+    };
+  }, []);
+
+  // קוראים לזה בתחילת כל מנוחה
+  const primeDone = useCallback(() => {
+    hasPlayedThisRest.current = false;
+    if (primed.current) return;
+    primed.current = createDonePlayer();
+  }, []);
 
   const playTick = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
   }, []);
 
   const playDone = useCallback(() => {
-    if (isPlayingDone.current) return;
-    isPlayingDone.current = true;
-    try {
-      donePlayer.play();
-    } catch {
-      isPlayingDone.current = false;
-    }
-  }, [donePlayer]);
+    if (hasPlayedThisRest.current) return; // פעם אחת לכל מנוחה, בלי קשר לכמה פעמים קראו לנו
+    hasPlayedThisRest.current = true;
 
-  return { playTick, playDone };
+    const player = primed.current ?? createDonePlayer();
+    primed.current = null; // הנגן הזה חד־פעמי - לא משתמשים בו שוב לעולם
+    if (!player) return;
+
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      clearTimeout(failsafe);
+      sub.remove();
+      releasePlayer(player);
+    };
+    const sub = player.addListener('playbackStatusUpdate', (status) => {
+      if (status.didJustFinish) release();
+    });
+    const failsafe = setTimeout(release, RELEASE_FAILSAFE_MS);
+
+    try {
+      player.play();
+    } catch {
+      release();
+    }
+  }, []);
+
+  return { playTick, playDone, primeDone };
 }
