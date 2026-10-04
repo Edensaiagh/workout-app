@@ -41,6 +41,7 @@ export default function WorkoutTrackerScreen() {
     activeWorkout,
     currentExerciseIndex,
     rest,
+    betweenExercisesStartedAt,
     startWorkout,
     finishWorkout,
     cancelWorkout,
@@ -58,6 +59,16 @@ export default function WorkoutTrackerScreen() {
   const connection = useConnectionStatus();
 
   const [elapsed, setElapsed] = useState(0);
+
+  // שעון "מנוחה בין תרגילים" (ספירה קדימה) - רץ רק בתרגיל שעוד אין בו סטים
+  const [betweenElapsed, setBetweenElapsed] = useState(0);
+  useEffect(() => {
+    if (betweenExercisesStartedAt === null) return;
+    const update = () => setBetweenElapsed(Math.max(0, Math.round((Date.now() - betweenExercisesStartedAt) / 1000)));
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [betweenExercisesStartedAt]);
   const [repsText, setRepsText] = useState('');
   const [weightText, setWeightText] = useState('');
   const [setError, setSetError] = useState<string | null>(null);
@@ -401,6 +412,17 @@ export default function WorkoutTrackerScreen() {
           <Text style={styles.nameChevron}>‹</Text>
         </TouchableOpacity>
 
+        {currentExercise.sets.length === 0 && betweenExercisesStartedAt !== null && (
+          <View style={styles.restDivider}>
+            <View style={styles.restDividerLine} />
+            <View style={styles.betweenPill}>
+              <Ionicons name="timer-outline" size={iconSize.sm - 4} color={colors.accentText} />
+              <Text style={styles.betweenPillText}>מנוחה בין תרגילים · {fmt(betweenElapsed)}</Text>
+            </View>
+            <View style={styles.restDividerLine} />
+          </View>
+        )}
+
         {currentExercise.sets.length === 0 && (
           <Text style={styles.emptyState}>הוסיפי סט ראשון כדי להמשיך</Text>
         )}
@@ -411,7 +433,9 @@ export default function WorkoutTrackerScreen() {
             {set.restBeforeSeconds !== null && (
               <View style={styles.restDivider}>
                 <View style={styles.restDividerLine} />
-                <Text style={styles.restDividerLabel}>מנוחה {fmt(set.restBeforeSeconds)}</Text>
+                <Text style={styles.restDividerLabel}>
+                  {i === 0 ? 'מנוחה בין תרגילים' : 'מנוחה'} {fmt(set.restBeforeSeconds)}
+                </Text>
                 <View style={styles.restDividerLine} />
               </View>
             )}
@@ -667,6 +691,19 @@ const createStyles = (colors: Palette) => StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
   },
+
+  betweenPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.accentBadgeBg,
+    borderWidth: 1,
+    borderColor: colors.accentBadgeBorder,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  betweenPillText: { color: colors.accentText, fontSize: fontSize.xs, fontWeight: '600' },
 
   addSetForm: {
     backgroundColor: colors.surfaceRaised,

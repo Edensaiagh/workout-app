@@ -450,8 +450,19 @@ export default function HistoryScreen() {
           </View>
 
           <ScrollView contentContainerStyle={styles.detailList}>
-            {selectedWorkout.exercises.map((ex) => (
-              <View key={ex.id} style={styles.exBlock}>
+            {selectedWorkout.exercises.map((ex, exIndex) => (
+              <React.Fragment key={ex.id}>
+              {exIndex > 0 && ex.sets[0]?.restBeforeSeconds != null && (
+                <View style={styles.betweenRow}>
+                  <View style={styles.betweenLine} />
+                  <View style={styles.betweenPill}>
+                    <Ionicons name="arrow-down" size={iconSize.sm - 4} color={colors.accentText} />
+                    <Text style={styles.betweenPillText}>מנוחה בין תרגילים: {fmtRest(ex.sets[0].restBeforeSeconds)}</Text>
+                  </View>
+                  <View style={styles.betweenLine} />
+                </View>
+              )}
+              <View style={styles.exBlock}>
                 <Text style={styles.exName}>{ex.name}</Text>
                 {ex.sets.map((set, i) => (
                   <React.Fragment key={set.id}>
@@ -473,6 +484,7 @@ export default function HistoryScreen() {
                   </React.Fragment>
                 ))}
               </View>
+              </React.Fragment>
             ))}
           </ScrollView>
         </Animated.View>
@@ -679,6 +691,20 @@ const createStyles = (colors: Palette) => StyleSheet.create({
   exName: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 10, textAlign: 'center', alignSelf: 'center' },
   restBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 3 },
   restBetweenText: { color: colors.textFaint, fontSize: 12 },
+  betweenRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginVertical: spacing.xs },
+  betweenLine: { flex: 1, height: 1, backgroundColor: colors.accentBadgeBorder },
+  betweenPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.accentBadgeBg,
+    borderWidth: 1,
+    borderColor: colors.accentBadgeBorder,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  betweenPillText: { color: colors.accentText, fontSize: 12, fontWeight: '600' },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   setNum: {
     width: 22,
