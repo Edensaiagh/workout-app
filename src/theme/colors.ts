@@ -117,3 +117,13 @@ export const lightColors: Palette = {
   overlay: 'rgba(0,0,0,0.5)',
   white: '#f7f5ef',
 };
+
+// ---- מסך הפתיחה המונפש ----
+// נשאר כהה בשני המראות, כמו המסך הנייטיב של expo-splash-screen שמוצג ממש לפניו.
+// splashBg חייב להיות זהה ל-backgroundColor של expo-splash-screen ב-app.json,
+// אחרת רואים הבהוב צבע במעבר בין המסך הנייטיב למסך המונפש.
+export const splashColors = {
+  splashBg: '#14161A',
+  splashText: '#f1f0ec',
+  splashAccent: '#ffb454',
+} as const;

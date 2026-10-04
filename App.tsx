@@ -1,13 +1,15 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { View, ActivityIndicator, Image } from 'react-native';
 import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemeProvider, useTheme, fontAssets, fontSize, iconSize, spacing, touch } from './src/theme';
+import AnimatedSplash from './src/components/AnimatedSplash';
+import LoadingScreen from './src/components/LoadingScreen';
 import WorkoutTrackerScreen from './src/screens/WorkoutTrackerScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
@@ -16,6 +18,12 @@ import LoginScreen from './src/screens/LoginScreen';
 import { AuthProvider, useAuth } from './src/lib/authContext';
 import { syncPendingWorkoutsToCloud } from './src/lib/workoutService';
 import { useIsOffline } from './src/lib/network';
+
+// המסך הנייטיב נשאר מוצג עד שהגופנים נטענים ו-AnimatedSplash מצויר, ואז AnimatedSplash מסתיר אותו
+// (חייב לרוץ ברמת המודול, לפני שה-App מתרנדר).
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // אם הקריאה נכשלת המסך הנייטיב פשוט ייעלם מוקדם יותר
+});
 
 const Tab = createBottomTabNavigator();
 
@@ -63,7 +71,6 @@ function AppTabs() {
 }
 
 function Root() {
-  const { colors } = useTheme();
   const { user, initializing } = useAuth();
   const offline = useIsOffline();
 
@@ -77,16 +84,7 @@ function Root() {
   }, [user, offline]);
 
   if (initializing) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <Image
-          source={require('./assets/logo.png')}
-          style={{ width: 120, height: 120, marginBottom: spacing.xl }}
-          accessibilityLabel="הלוגו של Bizi 365"
-        />
-        <ActivityIndicator color={colors.accentText} size="large" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return user ? <AppTabs /> : <LoginScreen />;
@@ -95,14 +93,15 @@ function Root() {
 function AppShell() {
   const { colors, scheme } = useTheme();
 
-  // בזמן שהגופן נטען מציגים רק רקע; אם הטעינה נכשלת ממשיכים עם גופן המערכת
+  // מסך הפתיחה המונפש מוצג מעל האפליקציה עד שהוא מסיים לדעוך (ראה AnimatedSplash)
+  const [splashDone, setSplashDone] = useState(false);
+  const handleSplashFinish = useCallback(() => setSplashDone(true), []);
+
+  // בזמן שהגופנים נטענים המסך הנייטיב עדיין מוצג (preventAutoHideAsync למעלה), ולכן לא מציירים
+  // כלום; אם הטעינה נכשלת ממשיכים עם גופן המערכת
   const [fontsLoaded, fontError] = useFonts(fontAssets);
   if (!fontsLoaded && !fontError) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <Image source={require('./assets/logo.png')} style={{ width: 120, height: 120 }} />
-      </View>
-    );
+    return null;
   }
 
   // ערכת נושא של הניווט - כל הצבעים מגיעים מ-src/theme/colors.ts
@@ -127,6 +126,7 @@ function AppShell() {
           <Root />
         </NavigationContainer>
       </AuthProvider>
+      {!splashDone && <AnimatedSplash onFinish={handleSplashFinish} />}
     </SafeAreaProvider>
   );
 }

@@ -12,6 +12,7 @@ import { Heebo_500Medium } from '@expo-google-fonts/heebo/500Medium';
 import { Heebo_600SemiBold } from '@expo-google-fonts/heebo/600SemiBold';
 import { Heebo_700Bold } from '@expo-google-fonts/heebo/700Bold';
 import { Heebo_800ExtraBold } from '@expo-google-fonts/heebo/800ExtraBold';
+import { Silkscreen_700Bold } from '@expo-google-fonts/silkscreen/700Bold';
 
 /** מועבר ל-useFonts ב-App.tsx */
 export const fontAssets = {
@@ -20,7 +21,12 @@ export const fontAssets = {
   Heebo_600SemiBold,
   Heebo_700Bold,
   Heebo_800ExtraBold,
+  // גופן הפיקסלים של הכיתוב bizi365 במסך הפתיחה (לא משמש לטקסט רגיל באפליקציה)
+  Silkscreen_700Bold,
 };
+
+/** שם גופן הפיקסלים של הלוגו; משתמשים בו עם Text של react-native ולא עם Text של '../theme' */
+export const wordmarkFont = 'Silkscreen_700Bold';
 
 /** שם הגופן לפי fontWeight שכתוב בסגנון */
 export function fontFamilyForWeight(weight: string | number | undefined): string {
