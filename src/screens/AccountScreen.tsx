@@ -1,10 +1,9 @@
 // src/screens/AccountScreen.tsx
 import React, { useState, useMemo } from 'react';
-import { View, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../lib/authContext';
 import { logOut } from '../lib/auth';
 import { haptics } from '../lib/haptics';
-import { SoundVibrationLab } from '../components/SoundVibrationLab';
 import { fontSize, radius, spacing, touch, Text, useTheme } from '../theme';
 import type { Palette, ThemeMode } from '../theme';
 
@@ -39,7 +38,7 @@ export default function AccountScreen() {
   };
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+    <View style={styles.container}>
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{(user?.email ?? '?').charAt(0).toUpperCase()}</Text>
       </View>
@@ -69,8 +68,6 @@ export default function AccountScreen() {
         <Text style={styles.themeHint}>״לפי המכשיר״ עוקב אחרי ההגדרה של הטלפון.</Text>
       </View>
 
-      <SoundVibrationLab />
-
       <TouchableOpacity style={[common.dangerButton, styles.signOut]} onPress={handleSignOut} disabled={signingOut}>
         {signingOut ? (
           <ActivityIndicator color={colors.danger} />
@@ -78,13 +75,12 @@ export default function AccountScreen() {
           <Text style={common.dangerButtonText}>התנתקות</Text>
         )}
       </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 }
 
 const createStyles = (colors: Palette) => StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: colors.bg },
-  container: { alignItems: 'center', paddingTop: 80, paddingBottom: 40, paddingHorizontal: 24 },
+  container: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', paddingTop: 80, paddingHorizontal: 24 },
   avatar: {
     width: 84,
     height: 84,

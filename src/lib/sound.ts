@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
-import * as Haptics from 'expo-haptics';
+import { haptics } from './haptics';
 
 const restDoneSource = require('../../assets/sounds/rest-done.wav');
 
@@ -19,7 +19,7 @@ const MAX_RESETS_PER_REST = 2;
 
 let audioModeReady = false;
 
-export async function ensureAudioMode() {
+async function ensureAudioMode() {
   if (audioModeReady) return;
   audioModeReady = true;
   try {
@@ -61,7 +61,7 @@ export function useRestSounds() {
   }, []);
 
   const playTick = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    haptics.restTick(); // הרטט של הספירה לאחור (3 השניות האחרונות)
   }, []);
 
   const playDone = useCallback(() => {
