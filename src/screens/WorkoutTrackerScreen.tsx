@@ -102,7 +102,7 @@ export default function WorkoutTrackerScreen() {
         if (!doneFired) {
           doneFired = true;
           playDone();
-          haptics.success();
+          haptics.restDone();
           completeRestNaturally();
         }
         clearInterval(interval);
