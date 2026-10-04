@@ -12,6 +12,8 @@ import { saveWorkout, getUserWorkouts } from '../lib/workoutService';
 import { useRestSounds } from '../lib/sound';
 import { haptics } from '../lib/haptics';
 import { useAuth } from '../lib/authContext';
+import { useConnectionStatus } from '../lib/network';
+import { ConnectionBanner, OfflinePill } from '../components/ConnectionBanner';
 import ExerciseNamePicker from '../components/ExerciseNamePicker';
 import { WorkoutCompleteView } from '../components/WorkoutCompleteView';
 import { StepperField } from '../components/StepperField';
@@ -53,6 +55,7 @@ export default function WorkoutTrackerScreen() {
   } = useWorkoutStore();
 
   const { playTick, playDone, primeDone } = useRestSounds();
+  const connection = useConnectionStatus();
 
   const [elapsed, setElapsed] = useState(0);
   const [repsText, setRepsText] = useState('');
@@ -301,6 +304,8 @@ export default function WorkoutTrackerScreen() {
           </Text>
         </View>
 
+        <OfflinePill status={connection} />
+
         <Text style={styles.restOverlayLabel}>מנוחה</Text>
         <Text style={styles.restOverlaySubtitle}>
           לפני הסט הבא — {currentExercise.name || 'התרגיל'}
@@ -376,6 +381,15 @@ export default function WorkoutTrackerScreen() {
           <Text style={styles.timerLabel}>זמן אימון כולל</Text>
           <Text style={styles.timer}>{fmt(Math.floor(elapsed / 1000))}</Text>
         </View>
+      </View>
+
+      {/* אין חיבור: האימון ממשיך לעבוד ונשמר מקומית; כשהחיבור חוזר ההודעה הופכת לירוקה לכמה שניות */}
+      <View style={styles.connectionBannerWrap}>
+        <ConnectionBanner
+          status={connection}
+          body="האימון ממשיך כרגיל ונשמר על המכשיר. הוא יסונכרן כשהחיבור יחזור."
+          restoredBody="האימון יישמר בענן בסיומו."
+        />
       </View>
 
       {/* כרטיס התרגיל הנוכחי */}
@@ -565,6 +579,7 @@ const createStyles = (colors: Palette) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 18,
   },
+  connectionBannerWrap: { marginBottom: 12 },
   clockGroup: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   clockDot: {

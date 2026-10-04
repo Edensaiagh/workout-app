@@ -8,7 +8,7 @@
 // הערה חשובה: הקובץ הזה מניח ש-`useAuth()` מחזיר אובייקט עם שדה `user` שיש לו `uid`
 // (התבנית הרגילה של Firebase Auth). אם החתימה אצלך שונה - תעדכן את השורה המסומנת למטה.
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../lib/authContext'; // ⚠️ עדכני אם הנתיב/החתימה אצלך שונים
@@ -16,6 +16,8 @@ import { getUserWorkouts } from '../lib/workoutService';
 import { Workout } from '../types/workout';
 import { Ionicons } from '@expo/vector-icons';
 import { EmptyState } from '../components/EmptyState';
+import { LoadErrorState } from '../components/LoadErrorState';
+import { useIsOffline } from '../lib/network';
 import { iconSize, radius, spacing, touch, Text, useTheme } from '../theme';
 import type { Palette } from '../theme';
 
@@ -80,6 +82,10 @@ export default function AnalysisScreen() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0); // העלאה של המספר הזה גורמת לטעינה מחדש (ניסיון חוזר)
+  const offline = useIsOffline();
+  const offlineRef = useRef(offline); // הערך העדכני בתוך useFocusEffect, בלי להפעיל אותו מחדש בכל שינוי חיבור
+  offlineRef.current = offline;
 
   const [activityView, setActivityView] = useState<'week' | 'month'>('week');
   const [weekOffset, setWeekOffset] = useState(0); // 0..-4
@@ -95,6 +101,12 @@ export default function AnalysisScreen() {
     useCallback(() => {
       let cancelled = false;
       if (!user) return;
+      // אין חיבור: מציגים את זה מיד, במקום לחכות לכך ש-Firestore ייכשל (עשוי לקחת כ-10 שניות)
+      if (offlineRef.current) {
+        setError('offline');
+        setLoading(false);
+        return () => { cancelled = true; };
+      }
       setLoading(true);
       setError(null);
       getUserWorkouts(user.uid, 300)
@@ -108,8 +120,13 @@ export default function AnalysisScreen() {
           if (!cancelled) setLoading(false);
         });
       return () => { cancelled = true; };
-    }, [user?.uid])
+    }, [user?.uid, reloadKey])
   );
+
+  // כשהחיבור חוזר והטעינה נכשלה קודם - טוענים מחדש אוטומטית
+  useEffect(() => {
+    if (!offline && error) setReloadKey((k) => k + 1);
+  }, [offline]);
 
   const now = useMemo(() => new Date(), []);
 
@@ -247,8 +264,8 @@ export default function AnalysisScreen() {
   }
   if (error) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error}</Text>
+      <View style={styles.errorWrap}>
+        <LoadErrorState offline={offline} what="נתוני הניתוח" onRetry={() => setReloadKey((k) => k + 1)} />
       </View>
     );
   }
@@ -455,6 +472,7 @@ export default function AnalysisScreen() {
 
 const createStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  errorWrap: { flex: 1, backgroundColor: colors.bg },
   centerContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { color: colors.warning, fontSize: 15, textAlign: 'center', writingDirection: 'rtl' },
 

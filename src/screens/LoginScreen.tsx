@@ -17,6 +17,8 @@ import {
 } from '../lib/auth';
 import { fontSize, radius, spacing, touch, Text, TextInput, useTheme } from '../theme';
 import type { Palette } from '../theme';
+import { useIsOffline } from '../lib/network';
+import { ConnectionBanner } from '../components/ConnectionBanner';
 
 type Mode = 'signIn' | 'signUp';
 
@@ -27,6 +29,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const offline = useIsOffline();
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
@@ -97,7 +100,17 @@ export default function LoginScreen() {
             onChangeText={setPassword}
           />
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
+          {offline ? (
+            <View style={styles.offlineWrap}>
+              <ConnectionBanner
+                status="offline"
+                title=""
+                body="אין חיבור לאינטרנט. כדי להתחבר צריך חיבור, אפשר לנסות שוב כשהוא יחזור."
+              />
+            </View>
+          ) : (
+            error && <Text style={styles.errorText}>{error}</Text>
+          )}
 
           <TouchableOpacity
             style={[common.primaryButton, styles.submitButton, !canSubmit && common.disabled]}
@@ -165,6 +178,7 @@ const createStyles = (colors: Palette) => StyleSheet.create({
     fontSize: 16,
     marginBottom: spacing.lg,
   },
+  offlineWrap: { marginBottom: spacing.md },
   errorText: { color: colors.danger, fontSize: fontSize.sm, textAlign: 'center', marginBottom: spacing.md },
   submitButton: { marginTop: spacing.xs },
   switchModeText: {

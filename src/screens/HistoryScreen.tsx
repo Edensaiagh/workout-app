@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,6 +16,9 @@ import { getPersonalRecords, deletePersonalRecord, PersonalRecordsMap } from '..
 import { useAuth } from '../lib/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import { EmptyState } from '../components/EmptyState';
+import { LoadErrorState } from '../components/LoadErrorState';
+import { useIsOffline } from '../lib/network';
+import { getPendingWorkouts } from '../lib/localBackup';
 import { fontSize, iconSize, radius, spacing, touch, Text, useTheme } from '../theme';
 import type { Palette } from '../theme';
 
@@ -97,6 +100,11 @@ export default function HistoryScreen() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0); // העלאה של המספר הזה גורמת לטעינה מחדש (ניסיון חוזר)
+  const [pendingCount, setPendingCount] = useState(0);
+  const offline = useIsOffline();
+  const offlineRef = useRef(offline); // הערך העדכני בתוך useFocusEffect, בלי להפעיל אותו מחדש בכל שינוי חיבור
+  offlineRef.current = offline;
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
 
   const [personalRecords, setPersonalRecords] = useState<PersonalRecordsMap>({});
@@ -112,6 +120,14 @@ export default function HistoryScreen() {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
+      // אין חיבור: מציגים את זה מיד, במקום לחכות לכך ש-Firestore ייכשל (עשוי לקחת כ-10 שניות)
+      if (offlineRef.current) {
+        setLoadError('offline');
+        setLoading(false);
+        return () => {
+          cancelled = true;
+        };
+      }
       setLoading(true);
       getUserWorkouts(userId)
         .then((data) => {
@@ -129,8 +145,21 @@ export default function HistoryScreen() {
       return () => {
         cancelled = true;
       };
-    }, [userId])
+    }, [userId, reloadKey])
   );
+
+  // כשהחיבור חוזר והטעינה נכשלה קודם - טוענים מחדש אוטומטית, בלי שתצטרכי ללחוץ
+  useEffect(() => {
+    if (!offline && loadError) setReloadKey((k) => k + 1);
+  }, [offline]);
+
+  // אימונים שנשמרו רק במכשיר וממתינים לסנכרון - מוצגים בהודעת "אין חיבור"
+  useEffect(() => {
+    if (!loadError) return;
+    getPendingWorkouts()
+      .then((pending) => setPendingCount(pending.length))
+      .catch(() => setPendingCount(0));
+  }, [loadError]);
 
   // שיאים אישיים - נטענים בנפרד מהאימונים עצמם (מסמך אחר, ראו lib/personalRecords.ts).
   // כישלון כאן לא אמור להפיל את שאר המסך - פשוט לא יוצג כרטיס השיאים הפעם.
@@ -288,9 +317,12 @@ export default function HistoryScreen() {
         )}
 
         {!loading && loadError && (
-          <View style={styles.centerFill}>
-            <Text style={styles.errorText}>{loadError}</Text>
-          </View>
+          <LoadErrorState
+            offline={offline}
+            what="האימונים שלך"
+            pendingCount={pendingCount}
+            onRetry={() => setReloadKey((k) => k + 1)}
+          />
         )}
 
         {!loading && !loadError && workouts.length === 0 && (

@@ -72,6 +72,8 @@ export function authErrorMessage(err: unknown): string {
     case 'auth/wrong-password':
     case 'auth/user-not-found':
       return 'אימייל או סיסמה שגויים';
+    case 'auth/network-request-failed':
+      return 'אין חיבור לאינטרנט. כדי להתחבר צריך חיבור, אפשר לנסות שוב כשהוא יחזור.';
     case 'auth/too-many-requests':
       return 'יותר מדי נסיונות - נסי שוב בעוד כמה דקות';
     default:

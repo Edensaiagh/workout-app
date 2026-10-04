@@ -8,6 +8,7 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
+import * as Network from 'expo-network';
 import { db } from './firebase';
 import { saveWorkoutLocally, syncPendingWorkouts, removePendingWorkout } from './localBackup';
 import { updatePersonalRecordsForWorkout, BrokenRecord, PersonalRecordsUpdate } from './personalRecords';
@@ -31,11 +32,48 @@ async function pushWorkoutToCloud(workout: Workout): Promise<PersonalRecordsUpda
   }
 }
 
+// Firestore כשאין חיבור לא נכשל מיד: הכתיבה נכנסת לתור וההבטחה (promise) נשארת תלויה עד
+// שיש רשת. בלי טיפול, סיום אימון בלי אינטרנט היה נתקע על "שומר..." לנצח, ולא נופל
+// לשמירה המקומית. לכן: (1) אם ברור שאין חיבור, שומרים מקומית מיד; (2) אם יש חיבור אבל
+// הוא איטי או לא יציב, מחכים לכל היותר CLOUD_SAVE_TIMEOUT_MS ואז שומרים מקומית.
+// בשני המקרים הסנכרון יתבצע אחר כך (syncPendingWorkoutsToCloud), וזה בטוח לכתיבה כפולה:
+// המסמך נכתב לפי workout.id, כך שכתיבה חוזרת רק מחליפה אותו באותו תוכן.
+const CLOUD_SAVE_TIMEOUT_MS = 10000;
+
+async function isDefinitelyOffline(): Promise<boolean> {
+  try {
+    const state = await Network.getNetworkStateAsync();
+    return state.isConnected === false || state.isInternetReachable === false;
+  } catch {
+    return false; // לא הצלחנו לבדוק - ננסה לשמור לענן כרגיל
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('cloud save timed out')), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
 export async function saveWorkout(
   workout: Workout
 ): Promise<{ savedTo: 'cloud' | 'local'; newPRsCount: number; newRecords: BrokenRecord[] }> {
+  if (await isDefinitelyOffline()) {
+    await saveWorkoutLocally(workout);
+    return { savedTo: 'local', newPRsCount: 0, newRecords: [] };
+  }
   try {
-    const update = await pushWorkoutToCloud(workout);
+    const update = await withTimeout(pushWorkoutToCloud(workout), CLOUD_SAVE_TIMEOUT_MS);
     return { savedTo: 'cloud', newPRsCount: update.count, newRecords: update.records };
   } catch {
     await saveWorkoutLocally(workout);

@@ -15,6 +15,7 @@ import AccountScreen from './src/screens/AccountScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import { AuthProvider, useAuth } from './src/lib/authContext';
 import { syncPendingWorkoutsToCloud } from './src/lib/workoutService';
+import { useIsOffline } from './src/lib/network';
 
 const Tab = createBottomTabNavigator();
 
@@ -64,15 +65,16 @@ function AppTabs() {
 function Root() {
   const { colors } = useTheme();
   const { user, initializing } = useAuth();
+  const offline = useIsOffline();
 
-  // בעליית האפליקציה, אם יש משתמש מחובר, מנסים לסנכרן אימונים שנתקעו
-  // מקומית מפעם קודמת שבה השמירה ל-Firestore נכשלה (ראה lib/localBackup.ts)
+  // בעליית האפליקציה, ובכל פעם שהחיבור חוזר אחרי נתק, אם יש משתמש מחובר, מנסים לסנכרן
+  // אימונים שנתקעו מקומית כשהשמירה ל-Firestore נכשלה (ראה lib/localBackup.ts)
   useEffect(() => {
-    if (!user) return;
+    if (!user || offline) return;
     syncPendingWorkoutsToCloud().catch(() => {
       // כשל בסנכרון לא אמור להפריע לאף מסך - האימונים נשארים ממתינים לניסיון הבא
     });
-  }, [user]);
+  }, [user, offline]);
 
   if (initializing) {
     return (

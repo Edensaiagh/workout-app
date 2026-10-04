@@ -40,6 +40,11 @@ export const darkColors = {
   dangerText: '#f0c2c5',
   success: '#34c759',
   warning: '#ff9f0a',
+  // הודעות מצב (אין חיבור / החיבור חזר): רקע עדין ומסגרת באותו גוון
+  warningSoft: 'rgba(255,159,10,0.12)',
+  warningBorder: 'rgba(255,159,10,0.4)',
+  successSoft: 'rgba(52,199,89,0.12)',
+  successBorder: 'rgba(52,199,89,0.4)',
 
   // ---- מסך הניתוח: כחול לפעילות/עבודה, כתום למנוחה ----
   chartPrimary: '#5b8cff',
@@ -90,6 +95,10 @@ export const lightColors: Palette = {
   dangerText: '#7a1d23',
   success: '#2fa04c',
   warning: '#c47600',
+  warningSoft: 'rgba(196,118,0,0.12)',
+  warningBorder: 'rgba(196,118,0,0.45)',
+  successSoft: 'rgba(47,160,76,0.12)',
+  successBorder: 'rgba(47,160,76,0.45)',
 
   chartPrimary: '#e0900a',
   chartPrimarySoft: 'rgba(224,144,10,0.16)',
