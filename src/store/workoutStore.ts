@@ -34,8 +34,9 @@ interface WorkoutStore {
   goToPrevExercise: () => void;
 
   // סטים
-  // sides: רק בתרגיל דו-צדדי. אז reps נשמר כסכום שני הצדדים, ו-repsRight/repsLeft נשמרים בנפרד
-  addSet: (reps: number, weight: number, sides?: { right: number; left: number }) => { ok: true } | { ok: false; error: string };
+  // sides: רק בתרגיל דו-צדדי. אז reps נשמר כסכום שני הצדדים, weight כמקסימום משני המשקלים,
+  // ו-repsRight/repsLeft/weightRight/weightLeft נשמרים בנפרד
+  addSet: (reps: number, weight: number, sides?: { right: number; left: number; weightRight: number; weightLeft: number }) => { ok: true } | { ok: false; error: string };
   deleteSet: (setId: string) => void;
 
   // מנוחה
@@ -168,7 +169,12 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       if (!valid(sides.right) || !valid(sides.left)) {
         return { ok: false, error: 'הזן מספר חזרות תקין (גדול מ-0) לימין ולשמאל' };
       }
+      const validWeight = (n: number) => Number.isFinite(n) && n >= 0;
+      if (!validWeight(sides.weightRight) || !validWeight(sides.weightLeft)) {
+        return { ok: false, error: 'המשקל לא יכול להיות שלילי' };
+      }
       reps = sides.right + sides.left;
+      weight = Math.max(sides.weightRight, sides.weightLeft);
     } else if (!Number.isFinite(reps) || reps <= 0 || !Number.isInteger(reps)) {
       return { ok: false, error: 'הזן מספר חזרות תקין (גדול מ-0)' };
     }
@@ -190,7 +196,9 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       weight,
       restBeforeSeconds,
       timestamp: now,
-      ...(sides ? { repsRight: sides.right, repsLeft: sides.left } : {}),
+      ...(sides
+        ? { repsRight: sides.right, repsLeft: sides.left, weightRight: sides.weightRight, weightLeft: sides.weightLeft }
+        : {}),
     };
 
     const exercises = activeWorkout.exercises.map((ex, i) =>

@@ -72,8 +72,9 @@ export default function WorkoutTrackerScreen() {
   }, [betweenExercisesStartedAt]);
   const [repsText, setRepsText] = useState(''); // חזרות (בדו-צדדי: ימין)
   const [repsLeftText, setRepsLeftText] = useState(''); // חזרות שמאל, רק בתרגיל דו-צדדי
-  const [weightText, setWeightText] = useState('');
-  const lastWeights = useRef<Map<string, number>>(new Map());
+  const [weightText, setWeightText] = useState(''); // משקל (בדו-צדדי: ימין)
+  const [weightLeftText, setWeightLeftText] = useState(''); // משקל שמאל, רק בתרגיל דו-צדדי
+  const lastWeights = useRef<Map<string, { right: number; left: number }>>(new Map());
   const [lastWeightsVersion, setLastWeightsVersion] = useState(0);
   const [setError, setSetError] = useState<string | null>(null);
   const [restRemaining, setRestRemaining] = useState(0);
@@ -149,7 +150,8 @@ export default function WorkoutTrackerScreen() {
     setSetError(null);
     const sets = currentExercise?.sets ?? [];
     const lastSet = sets[sets.length - 1];
-    setWeightText(lastSet ? String(lastSet.weight) : '');
+    setWeightText(lastSet ? String(lastSet.weightRight ?? lastSet.weight) : '');
+    setWeightLeftText(lastSet ? String(lastSet.weightLeft ?? lastSet.weight) : '');
   }, [currentExerciseIndex]);
 
   // כשבוחרים תרגיל שעוד אין בו סטים באימון הזה - מציעים את המשקל מהאימון הקודם שלו.
@@ -157,7 +159,10 @@ export default function WorkoutTrackerScreen() {
   useEffect(() => {
     if (!currentExercise || currentExercise.sets.length > 0) return;
     const remembered = lastWeights.current.get(currentExercise.name.trim().toLowerCase());
-    if (remembered !== undefined) setWeightText(String(remembered));
+    if (remembered !== undefined) {
+      setWeightText(String(remembered.right));
+      setWeightLeftText(String(remembered.left));
+    }
   }, [currentExerciseIndex, currentExercise?.name, lastWeightsVersion]);
 
   // היסטוריית שמות תרגילים אישית - לטאב "ההיסטוריה שלי" בעורך שם התרגיל
@@ -182,12 +187,14 @@ export default function WorkoutTrackerScreen() {
 
         // המשקל האחרון שנרשם לכל תרגיל (לפי שם), מהאימון האחרון שבו הוא הופיע.
         // האימונים ממוינים מהחדש לישן, אז ההופעה הראשונה היא האחרונה.
-        const weights = new Map<string, number>();
+        const weights = new Map<string, { right: number; left: number }>();
         workouts.forEach((w) => {
           w.exercises.forEach((ex) => {
             const key = ex.name.trim().toLowerCase();
             const last = ex.sets[ex.sets.length - 1];
-            if (key && last && !weights.has(key)) weights.set(key, last.weight);
+            if (key && last && !weights.has(key)) {
+              weights.set(key, { right: last.weightRight ?? last.weight, left: last.weightLeft ?? last.weight });
+            }
           });
         });
         lastWeights.current = weights;
@@ -205,9 +212,16 @@ export default function WorkoutTrackerScreen() {
     const reps = parseInt(repsText, 10);
     const weight = weightText === '' ? 0 : parseFloat(weightText);
 
+    const weightLeft = weightLeftText === '' ? 0 : parseFloat(weightLeftText);
+
     const result =
       exerciseKind === 'unilateral'
-        ? addSet(reps, weight, { right: reps, left: parseInt(repsLeftText, 10) })
+        ? addSet(reps, weight, {
+            right: reps,
+            left: parseInt(repsLeftText, 10),
+            weightRight: weight,
+            weightLeft,
+          })
         : addSet(reps, weight);
     if (!result.ok) {
       setSetError(result.error);
@@ -218,6 +232,7 @@ export default function WorkoutTrackerScreen() {
     setRepsText('');
     setRepsLeftText('');
     setWeightText(String(weight)); // מציעים אוטומטית את אותו משקל לסט הבא, ניתן לערוך
+    if (exerciseKind === 'unilateral') setWeightLeftText(String(weightLeft));
   };
 
   const handleNext = () => {
@@ -321,6 +336,7 @@ export default function WorkoutTrackerScreen() {
   const parsedReps = parseInt(repsText, 10);
   const parsedRepsLeft = parseInt(repsLeftText, 10);
   const parsedWeight = weightText === '' ? 0 : parseFloat(weightText);
+  const parsedWeightLeft = weightLeftText === '' ? 0 : parseFloat(weightLeftText);
   const canAddSet =
     !rest.isActive &&
     repsText.trim() !== '' &&
@@ -328,7 +344,8 @@ export default function WorkoutTrackerScreen() {
     parsedReps > 0 &&
     (exerciseKind !== 'unilateral' || (Number.isInteger(parsedRepsLeft) && parsedRepsLeft > 0)) &&
     Number.isFinite(parsedWeight) &&
-    parsedWeight >= 0;
+    parsedWeight >= 0 &&
+    (exerciseKind !== 'unilateral' || (Number.isFinite(parsedWeightLeft) && parsedWeightLeft >= 0));
 
   const nextDisabled = currentExercise.sets.length === 0 || rest.isActive;
   const restProgress =
@@ -484,26 +501,32 @@ export default function WorkoutTrackerScreen() {
                 <Text style={styles.setIndexText}>{i + 1}</Text>
               </View>
               <View style={styles.setData}>
-                <View style={styles.setChip}>
-                  <Text style={styles.setChipVal}>{set.weight}</Text>
-                  <Text style={styles.setChipUnit}>{exerciseKind === 'assisted' ? 'עזרה ק״ג' : 'ק״ג'}</Text>
-                </View>
                 {set.repsRight !== undefined && set.repsLeft !== undefined ? (
                   <>
                     <View style={[styles.setChip, { borderColor: colors.teal, borderWidth: 1 }]}>
-                      <Text style={styles.setChipVal}>{set.repsRight}</Text>
-                      <Text style={styles.setChipUnit}>ימין</Text>
+                      <Text style={styles.setChipVal}>
+                        {set.weightRight ?? set.weight}×{set.repsRight}
+                      </Text>
+                      <Text style={styles.setChipUnit}>ימין · ק״ג×חזרות</Text>
                     </View>
                     <View style={[styles.setChip, { borderColor: colors.purple, borderWidth: 1 }]}>
-                      <Text style={styles.setChipVal}>{set.repsLeft}</Text>
-                      <Text style={styles.setChipUnit}>שמאל</Text>
+                      <Text style={styles.setChipVal}>
+                        {set.weightLeft ?? set.weight}×{set.repsLeft}
+                      </Text>
+                      <Text style={styles.setChipUnit}>שמאל · ק״ג×חזרות</Text>
                     </View>
                   </>
                 ) : (
-                  <View style={styles.setChip}>
-                    <Text style={styles.setChipVal}>{set.reps}</Text>
-                    <Text style={styles.setChipUnit}>חזרות</Text>
-                  </View>
+                  <>
+                    <View style={styles.setChip}>
+                      <Text style={styles.setChipVal}>{set.weight}</Text>
+                      <Text style={styles.setChipUnit}>{exerciseKind === 'assisted' ? 'עזרה ק״ג' : 'ק״ג'}</Text>
+                    </View>
+                    <View style={styles.setChip}>
+                      <Text style={styles.setChipVal}>{set.reps}</Text>
+                      <Text style={styles.setChipUnit}>חזרות</Text>
+                    </View>
+                  </>
                 )}
               </View>
               <TouchableOpacity
@@ -528,19 +551,68 @@ export default function WorkoutTrackerScreen() {
 
         {/* הוספת סט */}
         <View style={styles.addSetForm}>
-          <View style={styles.fieldRow}>
-            <StepperField
-              label={exerciseKind === 'assisted' ? 'עזרה במכונה (ק״ג)' : 'משקל (ק״ג)'}
-              value={weightText}
-              onChangeText={setWeightText}
-              step={2.5}
-              decimals={2}
-              keyboardType="decimal-pad"
-              borderColor={colors.info}
-              minusLabel={exerciseKind === 'assisted' ? 'הורדת עזרה' : 'הורדת משקל'}
-              plusLabel={exerciseKind === 'assisted' ? 'הוספת עזרה' : 'הוספת משקל'}
-            />
-            {exerciseKind !== 'unilateral' && (
+          {exerciseKind === 'unilateral' ? (
+            <>
+              <View style={styles.fieldRow}>
+                <StepperField
+                  label="משקל - ימין (ק״ג)"
+                  value={weightText}
+                  onChangeText={setWeightText}
+                  step={2.5}
+                  decimals={2}
+                  keyboardType="decimal-pad"
+                  borderColor={colors.teal}
+                  minusLabel="הורדת משקל בצד ימין"
+                  plusLabel="הוספת משקל בצד ימין"
+                />
+                <StepperField
+                  label="משקל - שמאל (ק״ג)"
+                  value={weightLeftText}
+                  onChangeText={setWeightLeftText}
+                  step={2.5}
+                  decimals={2}
+                  keyboardType="decimal-pad"
+                  borderColor={colors.purple}
+                  minusLabel="הורדת משקל בצד שמאל"
+                  plusLabel="הוספת משקל בצד שמאל"
+                />
+              </View>
+              <View style={styles.fieldRow}>
+                <StepperField
+                  label="חזרות - ימין"
+                  value={repsText}
+                  onChangeText={setRepsText}
+                  step={1}
+                  keyboardType="number-pad"
+                  borderColor={colors.teal}
+                  minusLabel="הורדת חזרה בצד ימין"
+                  plusLabel="הוספת חזרה בצד ימין"
+                />
+                <StepperField
+                  label="חזרות - שמאל"
+                  value={repsLeftText}
+                  onChangeText={setRepsLeftText}
+                  step={1}
+                  keyboardType="number-pad"
+                  borderColor={colors.purple}
+                  minusLabel="הורדת חזרה בצד שמאל"
+                  plusLabel="הוספת חזרה בצד שמאל"
+                />
+              </View>
+            </>
+          ) : (
+            <View style={styles.fieldRow}>
+              <StepperField
+                label={exerciseKind === 'assisted' ? 'עזרה במכונה (ק״ג)' : 'משקל (ק״ג)'}
+                value={weightText}
+                onChangeText={setWeightText}
+                step={2.5}
+                decimals={2}
+                keyboardType="decimal-pad"
+                borderColor={colors.info}
+                minusLabel={exerciseKind === 'assisted' ? 'הורדת עזרה' : 'הורדת משקל'}
+                plusLabel={exerciseKind === 'assisted' ? 'הוספת עזרה' : 'הוספת משקל'}
+              />
               <StepperField
                 label="חזרות"
                 value={repsText}
@@ -550,30 +622,6 @@ export default function WorkoutTrackerScreen() {
                 borderColor={colors.teal}
                 minusLabel="הורדת חזרה"
                 plusLabel="הוספת חזרה"
-              />
-            )}
-          </View>
-          {exerciseKind === 'unilateral' && (
-            <View style={styles.fieldRow}>
-              <StepperField
-                label="חזרות - ימין"
-                value={repsText}
-                onChangeText={setRepsText}
-                step={1}
-                keyboardType="number-pad"
-                borderColor={colors.teal}
-                minusLabel="הורדת חזרה בצד ימין"
-                plusLabel="הוספת חזרה בצד ימין"
-              />
-              <StepperField
-                label="חזרות - שמאל"
-                value={repsLeftText}
-                onChangeText={setRepsLeftText}
-                step={1}
-                keyboardType="number-pad"
-                borderColor={colors.purple}
-                minusLabel="הורדת חזרה בצד שמאל"
-                plusLabel="הוספת חזרה בצד שמאל"
               />
             </View>
           )}

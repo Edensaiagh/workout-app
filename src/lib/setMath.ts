@@ -10,6 +10,10 @@ import type { WorkoutSet } from '../types/workout';
  */
 export function setVolume(exerciseName: string, set: WorkoutSet): number {
   if (getExerciseKind(exerciseName) === 'assisted') return 0;
+  // דו-צדדי עם משקל נפרד לכל צד: כל צד לפי המשקל והחזרות שלו
+  if (set.weightRight !== undefined && set.weightLeft !== undefined && set.repsRight !== undefined && set.repsLeft !== undefined) {
+    return set.weightRight * set.repsRight + set.weightLeft * set.repsLeft;
+  }
   return set.weight * set.reps;
 }
 

@@ -498,8 +498,10 @@ export default function HistoryScreen() {
                       </View>
                       {set.repsRight !== undefined && set.repsLeft !== undefined ? (
                         <Text style={styles.setDetail}>
-                          <Text style={styles.bold}>{set.weight}</Text> ק"ג{' · '}ימין <Text style={styles.bold}>{set.repsRight}</Text>
-                          {' · '}שמאל <Text style={styles.bold}>{set.repsLeft}</Text>
+                          ימין <Text style={styles.bold}>{set.weightRight ?? set.weight}</Text> ק"ג ×{' '}
+                          <Text style={styles.bold}>{set.repsRight}</Text>
+                          {' · '}שמאל <Text style={styles.bold}>{set.weightLeft ?? set.weight}</Text> ק"ג ×{' '}
+                          <Text style={styles.bold}>{set.repsLeft}</Text>
                         </Text>
                       ) : getExerciseKind(ex.name) === 'assisted' ? (
                         <Text style={styles.setDetail}>

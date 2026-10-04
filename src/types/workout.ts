@@ -6,6 +6,8 @@ export interface WorkoutSet {
   weight: number; // בק"ג. בתרגיל עם עזרה: כמה עזרה הוגדרה במכונה (פחות עזרה = קשה יותר)
   repsRight?: number; // רק בתרגיל דו-צדדי
   repsLeft?: number; // רק בתרגיל דו-צדדי
+  weightRight?: number; // רק בתרגיל דו-צדדי: משקל נפרד לכל צד. weight הוא אז המקסימום מבין השניים (לשיאים)
+  weightLeft?: number; // (סטים ישנים בדו-צדדי, מלפני הפיצול, הם בלי שני אלה: משקל אחד לשני הצדדים)
   restBeforeSeconds: number | null; // כמה זמן נחו לפני הסט הזה (null לסט הראשון בתרגיל)
   timestamp: number;
 }
